@@ -106,6 +106,16 @@ export async function voteAnswer(answerId, vote) {
   return data
 }
 
+export async function resolveQuestion(questionId, resolved = true) {
+  const { data } = await axisPrivate().patch(`/api/questions/${questionId}/resolve`, { resolved })
+  return data
+}
+
+export async function acceptAnswer(questionId, answerId) {
+  const { data } = await axisPrivate().post(`/api/questions/${questionId}/accept-answer/${answerId}`)
+  return data
+}
+
 export async function postComment(answerId, body, parentId = null) {
   const { data } = await axisPrivate().post('/api/comments', {
     targetType: 'answer',

@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom'
 import {
-  ArrowLeft, CheckCircle2, Check, ChevronUp, ChevronDown,
+  ArrowLeft, CheckCircle2, Check, CheckCircle, RotateCcw, ChevronUp, ChevronDown,
   AlertTriangle, MessageCircle, Loader,
 } from 'lucide-react'
 import ReportModal from '../../components/ReportModal/ReportModal'
 import AnswerComments from '../../components/AnswerComments/AnswerComments'
+import Button from '../../../../components/Button/Button'
 import {
   fetchQuestionDetail, fetchQuestions, postAnswer, voteAnswer, reportContent, postComment,
+  resolveQuestion, acceptAnswer,
 } from '../../service'
 import { notifySuccess, notifyError } from '../../../../lib/notify'
 
@@ -83,6 +85,26 @@ function QueryDetailPage() {
     }
   }
 
+  async function handleResolveToggle(resolved) {
+    try {
+      await resolveQuestion(queryId, resolved)
+      notifySuccess(resolved ? 'Question marked as solved.' : 'Question reopened.')
+      await load()
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not update the question.')
+    }
+  }
+
+  async function handleAcceptAnswer(answerId) {
+    try {
+      await acceptAnswer(queryId, answerId)
+      notifySuccess('Marked as the resolution. Question resolved.')
+      await load()
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not mark resolution.')
+    }
+  }
+
   async function handlePostReply() {
     if (!reply.trim()) {
       notifyError('Write something before posting.')
@@ -153,6 +175,8 @@ function QueryDetailPage() {
   const { question, answers, comments = [] } = data
   const statusLabel = STATUS_LABEL[question.status] || 'Active'
   const isResolved = statusLabel === 'Resolved'
+  const isOwner = question.author_id === user?.userId
+  const hasAcceptedAnswer = answers.some(a => a.is_accepted)
 
   // Group comments by their parent answer
   const commentsByAnswer = {}
@@ -173,9 +197,31 @@ function QueryDetailPage() {
         <div className="min-w-0 flex-1">
           {/* Header */}
           <div className="mb-10">
-            <h1 className="font-display mb-4 text-[28px] font-bold leading-tight text-[#191c1d]">
-              {question.title}
-            </h1>
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <h1 className="font-display text-[28px] font-bold leading-tight text-[#191c1d]">
+                {question.title}
+              </h1>
+              {/* Owner: mark solved / reopen */}
+              {isOwner && (
+                isResolved ? (
+                  <Button
+                    variant="secondary"
+                    className="shrink-0 gap-2 text-[12px]"
+                    onClick={() => handleResolveToggle(false)}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.8} /> Reopen
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    className="shrink-0 gap-2 border-[#8c6a40] text-[12px] text-[#8c6a40] hover:border-[#6b5230] hover:text-[#6b5230]"
+                    onClick={() => handleResolveToggle(true)}
+                  >
+                    <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Mark as Solved
+                  </Button>
+                )
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#4b5563]">
               <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold ${
                 isResolved ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#8c6a40]/10 text-[#8c6a40]'
@@ -216,6 +262,8 @@ function QueryDetailPage() {
                 accepted={ans.is_accepted}
                 score={(ans.upvotes ?? 0) - (ans.downvotes ?? 0)}
                 myVote={ans.my_vote ?? 0}
+                canAccept={isOwner && !hasAcceptedAnswer && ans.author_id !== user?.userId}
+                onAccept={() => handleAcceptAnswer(ans.answer_id)}
                 onVoteUp={() => handleVote(ans.answer_id, 'up')}
                 onVoteDown={() => handleVote(ans.answer_id, 'down')}
                 onReport={() => setReportTarget({ type: 'answer', id: ans.answer_id })}
@@ -336,7 +384,8 @@ function QueryDetailPage() {
 
 // ── Thread item (OP or answer) ──────────────────────────────────────────────
 function ThreadItem({
-  authorName, isSelf, date, body, isOriginal, accepted, score, myVote = 0, onVoteUp, onVoteDown, onReport, children,
+  authorName, isSelf, date, body, isOriginal, accepted, score, myVote = 0,
+  canAccept = false, onAccept, onVoteUp, onVoteDown, onReport, children,
 }) {
   const initials = initialsOf(authorName)
   return (
@@ -391,17 +440,29 @@ function ThreadItem({
                 <ChevronDown className="h-5 w-5" strokeWidth={myVote === -1 ? 3 : 2} />
               </button>
             </div>
-            {isSelf ? (
-              <span className="text-[11px] italic text-[#9ca3af]">Cannot report own comment</span>
-            ) : (
-              <button
-                type="button"
-                onClick={onReport}
-                className="flex items-center gap-1.5 text-[12px] font-bold text-[#9ca3af] transition hover:text-[#dc2626]"
-              >
-                <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.8} /> REPORT
-              </button>
-            )}
+            <div className="flex items-center gap-4">
+              {/* Owner: accept this answer as the resolution */}
+              {canAccept && (
+                <button
+                  type="button"
+                  onClick={onAccept}
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-[#16a34a] transition hover:text-[#15803d]"
+                >
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} /> MARK AS RESOLUTION
+                </button>
+              )}
+              {isSelf ? (
+                <span className="text-[11px] italic text-[#9ca3af]">Cannot report own comment</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onReport}
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-[#9ca3af] transition hover:text-[#dc2626]"
+                >
+                  <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.8} /> REPORT
+                </button>
+              )}
+            </div>
           </div>
         )}
 

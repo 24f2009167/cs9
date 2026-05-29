@@ -391,7 +391,8 @@ export async function acceptAnswer(req, res, next) {
 
     answer.is_accepted = true
     await answer.save()
-    question.status = 'answered'
+    // Accepting a resolution closes (resolves) the question
+    question.status = 'closed'
     await question.save()
 
     await awardSpark({
@@ -422,6 +423,30 @@ export async function acceptAnswer(req, res, next) {
     })
 
     res.json({ success: true, message: 'Answer accepted' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/** Owner/admin marks their question resolved (closed) or reopens it. */
+export async function resolveQuestion(req, res, next) {
+  try {
+    const question = await Question.findOne({ question_id: req.params.questionId })
+
+    if (!question || question.status === 'removed') {
+      throw createHttpError(404, 'Question not found')
+    }
+    if (!canManage(req, question)) {
+      throw createHttpError(403, 'Only the author can resolve this question')
+    }
+
+    const resolved = req.body.resolved !== false // default: true
+    question.status = resolved
+      ? 'closed'
+      : (question.answer_count > 0 ? 'answered' : 'unanswered')
+    await question.save()
+
+    res.json({ success: true, status: question.status, resolved })
   } catch (error) {
     next(error)
   }

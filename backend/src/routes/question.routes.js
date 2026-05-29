@@ -8,6 +8,7 @@ import {
   listPublishedFAQs,
   listQuestions,
   listQuestionTags,
+  resolveQuestion,
   updateQuestion,
   voteQuestion,
 } from '../controllers/question.controller.js'
@@ -272,6 +273,7 @@ router.delete('/:questionId', checkRole('USER', 'ADMIN'), deleteQuestion)
  *         description: Question not found
  */
 router.post('/:questionId/vote', checkRole('USER', 'RESOLVER', 'ADMIN'), voteQuestion)
+router.patch('/:questionId/resolve', checkRole('USER', 'RESOLVER', 'ADMIN'), resolveQuestion)
 router.post('/:questionId/answers', checkRole('USER', 'RESOLVER', 'ADMIN'), createAnswer)
 
 /**
