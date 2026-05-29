@@ -17,13 +17,16 @@ function fmtDate(d) {
  * NOTE: render helpers below are plain functions returning JSX (not nested
  * components) so the reply <textarea> keeps focus across keystrokes.
  */
-function AnswerComments({ answerId, comments = [], currentUserId, onSubmit }) {
+function AnswerComments({ answerId, comments = [], currentUserId, locked = false, onSubmit }) {
   const [replyTo, setReplyTo] = useState(null)   // parentId being replied to, or 'root'
   const [value, setValue]     = useState('')
   const [busy, setBusy]       = useState(false)
 
   const topLevel = comments.filter(c => !c.parent_id)
   const repliesOf = id => comments.filter(c => c.parent_id === id)
+
+  // Nothing to show: resolved question with no existing comments on this answer
+  if (locked && comments.length === 0) return null
 
   function openReply(parentKey) {
     setReplyTo(parentKey)
@@ -73,9 +76,15 @@ function AnswerComments({ answerId, comments = [], currentUserId, onSubmit }) {
 
   const commentRow = (c, isReply) => {
     const isSelf = c.author_id === currentUserId
+    const state = c.moderation_state || 'visible'
+    const hidden = state !== 'visible'
+    const tombstone = state === 'deleted'
+      ? `This comment from ${c.author_name} was deleted.`
+      : `This comment from ${c.author_name} is under review.`
+
     return (
       <div className={`flex gap-2.5 ${isReply ? 'ml-7' : ''}`}>
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#191c1d] text-[10px] font-bold text-white">
+        <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${hidden ? 'bg-[#9ca3af]' : 'bg-[#191c1d]'}`}>
           {initialsOf(c.author_name)}
         </div>
         <div className="min-w-0 flex-1">
@@ -85,9 +94,13 @@ function AnswerComments({ answerId, comments = [], currentUserId, onSubmit }) {
             </span>
             <span className="text-[10px] text-[#9ca3af]">{fmtDate(c.created_at)}</span>
           </div>
-          <p className="text-[12px] leading-5 text-[#4b5563]" dangerouslySetInnerHTML={{ __html: c.body }} />
-          {/* Only top-level comments can receive a (one-level) reply */}
-          {!isReply && (
+          {hidden ? (
+            <p className="text-[12px] italic leading-5 text-[#9ca3af]">{tombstone}</p>
+          ) : (
+            <p className="text-[12px] leading-5 text-[#4b5563]" dangerouslySetInnerHTML={{ __html: c.body }} />
+          )}
+          {/* Only visible top-level comments can receive a (one-level) reply */}
+          {!isReply && !hidden && !locked && (
             <button
               type="button"
               onClick={() => openReply(c.comment_id)}
@@ -117,18 +130,20 @@ function AnswerComments({ answerId, comments = [], currentUserId, onSubmit }) {
         </div>
       )}
 
-      {/* Add a comment to the answer */}
-      {replyTo === 'root' ? (
-        replyBox(null)
-      ) : (
-        <button
-          type="button"
-          onClick={() => openReply('root')}
-          className="flex items-center gap-1.5 text-[11px] font-semibold text-[#9ca3af] transition hover:text-[#8c6a40]"
-        >
-          <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
-          {topLevel.length > 0 ? 'Add a comment' : 'Comment'}
-        </button>
+      {/* Add a comment to the answer — hidden once the question is resolved */}
+      {!locked && (
+        replyTo === 'root' ? (
+          replyBox(null)
+        ) : (
+          <button
+            type="button"
+            onClick={() => openReply('root')}
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#9ca3af] transition hover:text-[#8c6a40]"
+          >
+            <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
+            {topLevel.length > 0 ? 'Add a comment' : 'Comment'}
+          </button>
+        )
       )}
     </div>
   )

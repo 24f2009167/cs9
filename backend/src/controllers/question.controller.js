@@ -259,19 +259,13 @@ export async function getQuestionById(req, res, next) {
 
     const includeAnswers = req.query.includeAnswers !== 'false'
     const includeComments = req.query.includeComments !== 'false'
-    const answerFilter = { question_id: question.question_id }
-    const commentFilter = { question_id: question.question_id }
 
-    if (!isAdmin(req)) {
-      answerFilter.moderation_status = 'approved'
-      answerFilter.is_deleted = { $ne: true }
-      commentFilter.moderation_status = 'approved'
-      commentFilter.is_deleted = { $ne: true }
-    }
-
+    // Fetch ALL answers/comments for the question. Hidden ones (flagged → pending,
+    // or soft-deleted) are kept as redacted tombstones so the thread shows
+    // "this reply is under review / was deleted" instead of silently vanishing.
     const [answers, comments] = await Promise.all([
-      includeAnswers ? Answer.find(answerFilter).sort({ is_accepted: -1, score: -1, created_at: 1 }).lean() : [],
-      includeComments ? Comment.find(commentFilter).sort({ created_at: 1 }).lean() : [],
+      includeAnswers ? Answer.find({ question_id: question.question_id }).sort({ is_accepted: -1, score: -1, created_at: 1 }).lean() : [],
+      includeComments ? Comment.find({ question_id: question.question_id }).sort({ created_at: 1 }).lean() : [],
     ])
 
     // Attach author display names without a per-row lookup
@@ -284,7 +278,22 @@ export async function getQuestionById(req, res, next) {
       .select('user_id name')
       .lean()
     const nameById = Object.fromEntries(users.map((u) => [u.user_id, u.name]))
-    const withAuthor = (doc) => ({ ...doc, author_name: nameById[doc.author_id] || 'User' })
+
+    const admin = isAdmin(req)
+    function moderationState(doc) {
+      if (doc.is_deleted) return 'deleted'
+      if (doc.moderation_status && doc.moderation_status !== 'approved') return 'under_review'
+      return 'visible'
+    }
+    // Decorate with author name + moderation state; redact hidden bodies for non-admins
+    function decorate(doc) {
+      const base = { ...doc, author_name: nameById[doc.author_id] || 'User' }
+      const state = moderationState(doc)
+      if (admin || state === 'visible') {
+        return { ...base, moderation_state: 'visible' }
+      }
+      return { ...base, moderation_state: state, body: '', body_plain: '' }
+    }
 
     // Current user's vote on each answer (for highlight / deselect)
     const myVotes = await Vote.find({
@@ -302,8 +311,8 @@ export async function getQuestionById(req, res, next) {
         ...questionObj,
         author_name: questionObj.is_anonymous ? 'Anonymous' : nameById[questionObj.author_id] || 'User',
       },
-      answers: answers.map((a) => ({ ...withAuthor(a), my_vote: voteByAnswer[a.answer_id] || 0 })),
-      comments: comments.map(withAuthor),
+      answers: answers.map((a) => ({ ...decorate(a), my_vote: voteByAnswer[a.answer_id] || 0 })),
+      comments: comments.map(decorate),
     })
   } catch (error) {
     next(error)

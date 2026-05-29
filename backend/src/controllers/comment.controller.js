@@ -39,6 +39,15 @@ export async function createComment(req, res, next) {
       throw createHttpError(404, 'Target not found')
     }
 
+    // No new replies once the question is resolved (closed), removed, or locked
+    const question = await Question.findOne({ question_id: answer.question_id }).select('status is_locked')
+    if (question && ['closed', 'removed'].includes(question.status)) {
+      throw createHttpError(409, 'Question closed')
+    }
+    if (question?.is_locked) {
+      throw createHttpError(423, 'Question is locked')
+    }
+
     let parent = null
     if (parentId) {
       parent = await Comment.findOne({ comment_id: parentId, answer_id: answer.answer_id })

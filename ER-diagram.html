@@ -1,0 +1,428 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rogāre — ER Diagram</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --fg: #172033;
+    --muted: #5b6475;
+    --line: #94a3b8;
+    --neutral: #e2e8f0;
+    --user: #bfdbfe;
+    --question: #d1fae5;
+    --answer: #fef3c7;
+    --comment: #ede0f8;
+    --vote: #fce7f3;
+    --notif: #e0f2fe;
+    --spark: #ffedd5;
+    --flag: #fee2e2;
+    --log: #f1f5f9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --fg: #e5e7eb;
+      --muted: #a3adbd;
+      --line: #475569;
+      --neutral: #1e293b;
+      --user: #1e3a5f;
+      --question: #064e3b;
+      --answer: #451a03;
+      --comment: #3b1f5e;
+      --vote: #4c1d3a;
+      --notif: #0c2d4a;
+      --spark: #431a0a;
+      --flag: #3b0a0a;
+      --log: #1e293b;
+    }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .title { font-size: 18px; font-weight: 700; fill: var(--fg); }
+  .subtitle { font-size: 11px; fill: var(--muted); }
+  .node { stroke: var(--line); stroke-width: 1; }
+  .lbl { font-size: 11px; font-weight: 700; fill: var(--fg); }
+  .fld { font-size: 10px; fill: var(--muted); }
+  .pk { font-size: 9px; fill: #b45309; font-weight: 700; }
+  .fk { font-size: 9px; fill: #1d4ed8; font-weight: 600; }
+  .enum { font-size: 9px; fill: #6b21a8; }
+  .edge { stroke: var(--line); stroke-width: 1.2; fill: none; }
+  .edge-dashed { stroke: var(--line); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; }
+  .zone-label { font-size: 10px; font-weight: 700; fill: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .legend-box { stroke: var(--line); stroke-width: 0.8; fill: var(--neutral); rx: 4; }
+  .legend-text { font-size: 10px; fill: var(--muted); }
+</style>
+<main>
+<svg viewBox="0 0 1360 920" xmlns="http://www.w3.org/2000/svg">
+
+ <!-- ═══════════════════════════════════════════ -->
+  <!-- ZONE LABELS                                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <text class="zone-label" x="18" y="28">Auth& Identity</text>
+  <text class="zone-label" x="440" y="28">Core Q&A</text>
+  <text class="zone-label" x="880" y="28">Engagement & Audit</text>
+
+  <!-- Divided zones -->
+  <line x1="430" y1="0" x2="430" y2="920" stroke="var(--line)" stroke-width="0.8" stroke-dasharray="6 4" />
+  <line x1="870" y1="0" x2="870" y2="920" stroke="var(--line)" stroke-width="0.8" stroke-dasharray="6 4" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- USERS                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(20,50)">
+    <rect width="168" height="174" rx="6" class="node" fill="var(--user)" />
+    <rect width="168" height="22" rx="6" fill="#1d4ed8" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">users</text>
+
+<text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">user_id</text>
+    <text class="fld" x="6" y="48">name</text>
+    <text class="fld" x="6" y="60">email</text>
+    <text class="fld" x="6" y="72">passwordHash</text>
+    <text class="enum" x="6" y="84">role: USER | RESOLVER | ADMIN</text>
+    <text class="enum" x="6" y="96">status: active | disabled | suspended</text>
+    <text class="fld" x="6" y="108">spark_points</text>
+    <text class="fld" x="6" y="120">is_expert</text>
+    <text class="fld" x="6" y="132">is_verified_expert</text>
+    <text class="fld" x="6" y="144">last_login_at</text>
+    <text class="fld" x="6" y="156">avatar_url</text>
+    <text class="fld" x="6" y="168">expert_type</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- USER_PROFILES                              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(20,240)">
+    <rect width="168" height="156" rx="6" class="node" fill="var(--user)" />
+    <rect width="168" height="22" rx="6" fill="#1d4ed8" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">user_profiles</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">profile_id</text>
+    <text class="fk" x="6" y="48">FK user_id → users</text>
+    <text class="fld" x="6" y="60">display_name</text>
+    <text class="fld" x="6" y="72">bio</text>
+    <text class="fld" x="6" y="84">avatar_url</text>
+    <text class="fld" x="6" y="96">location</text>
+    <text class="fld" x="6" y="108">social_links</text>
+    <text class="fld" x="6" y="120">reputation</text>
+    <text class="fld" x="6" y="132">phone</text>
+    <text class="fld" x="6" y="144">kyc, course, files</text>
+    <text class="fld" x="6" y="156">expertise, categories, tags</text>
+  </g>
+
+  <!-- USERS → USER_PROFILES (1:1 via user_id) -->
+  <path d="M104,224 L104,240" class="edge" />
+  <polygon points="104,240100,232 108,232" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ROLES                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(20,415)">
+    <rect width="168" height="66" rx="6" class="node" fill="var(--neutral)" />
+    <rect width="168" height="22" rx="6" fill="#475569" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">roles</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">role_id</text>
+    <text class="fld" x="6" y="48">name (unique)</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- USER_ROLE_MAPPER                          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(20,495)">
+    <rect width="168" height="76" rx="6" class="node" fill="var(--neutral)" />
+    <rect width="168" height="22" rx="6" fill="#475569" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">user_role_mappers</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">user_role_id</text>
+    <text class="fk" x="6" y="48">FK user_id → users</text>
+    <text class="fk" x="6" y="60">FK role_id → roles</text>
+    <text class="fld" x="6" y="72">[unique(user_id, role_id)]</text>
+  </g>
+
+  <!-- USERS → USER_ROLE_MAPPER -->
+  <path d="M104,224 L104,270 L196,270 L196,495" class="edge" />
+  <polygon points="196,495192,487 200,487" fill="var(--line)" />
+
+  <!-- ROLES → USER_ROLE_MAPPER -->
+  <path d="M104,481 L104,495" class="edge" />
+  <polygon points="104,495 100,487 108,487" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- QUESTIONS -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(440,50)">
+    <rect width="190" height="246" rx="6" class="node" fill="var(--question)" />
+    <rect width="190" height="22" rx="6" fill="#065f46" />
+    <text x="95" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">questions</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">question_id</text>
+    <text class="enum" x="6" y="48">kind: faq | community</text>
+    <text class="fld" x="6" y="60">title</text>
+    <text class="fld" x="6" y="72">slug (sparse, unique)</text>
+    <text class="fld" x="6" y="84">body</text>
+    <text class="fld" x="6" y="96">body_plain</text>
+    <text class="fld" x="6" y="108">tags[]</text>
+    <text class="fld" x="6" y="120">spark_bounty</text>
+    <text class="fk" x="6" y="132">FK author_id → users</text>
+    <text class="fld" x="6" y="144">is_anonymous</text>
+    <text class="enum" x="6" y="156">status: unanswered | answered | closed | draft | published | archived</text>
+    <text class="enum" x="6" y="168">visibility: public | hidden | deleted</text>
+    <text class="fld" x="6" y="180">is_pinned, is_locked</text>
+    <text class="fld" x="6" y="192">upvotes, upvoted_by[]</text>
+    <text class="fk" x="6" y="204">FK assigned_to → users (nullable)</text>
+    <text class="fld" x="6" y="216">view_count, answer_count</text>
+    <text class="fld" x="6" y="228">last_activity_at</text>
+    <text class="fld" x="6" y="240">linked_faq_id</text>
+  </g>
+
+  <!-- USERS → QUESTIONS (author) -->
+  <path d="M188,130 L420,130 L420,160" class="edge" />
+  <polygon points="440,160 432,156 432,164" fill="var(--line)" />
+
+  <!-- USERS → QUESTIONS (assigned resolver) -->
+  <path d="M188,178 L380,178 L380,248" class="edge" />
+  <polygon points="440,248 432,244 432,252" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- ANSWERS                                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(440,330)">
+    <rect width="190" height="206" rx="6" class="node" fill="var(--answer)" />
+    <rect width="190" height="22" rx="6" fill="#92400e" />
+    <text x="95" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">answers</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">answer_id</text>
+    <text class="fk" x="6" y="48">FK question_id → questions</text>
+    <text class="enum" x="6" y="60">question_kind: faq | community</text>
+    <text class="fk" x="6" y="72">FK author_id → users</text>
+    <text class="enum" x="6" y="84">author_role: USER | RESOLVER | ADMIN</text>
+    <text class="fld" x="6" y="96">body</text>
+    <text class="fld" x="6" y="108">body_plain</text>
+    <text class="fld" x="6" y="120">references[], attachments[]</text>
+    <text class="fld" x="6" y="132">is_expert, is_accepted, is_official</text>
+    <text class="fld" x="6" y="144">upvotes, upvoted_by[], score</text>
+    <text class="fld" x="6" y="156">comment_count, top_level_comment_count</text>
+    <text class="fld" x="6" y="168">spark_award: { amount, transaction_id }</text>
+    <text class="enum" x="6" y="180">moderation_status: approved | pending | rejected</text>
+    <text class="fld" x="6" y="192">edit_history[]</text>
+  </g>
+
+  <!-- QUESTIONS → ANSWERS -->
+  <path d="M535,296 L535,330" class="edge" />
+  <polygon points="535,330 531,322 539,322" fill="var(--line)" />
+
+  <!-- USERS → ANSWERS -->
+  <path d="M188,210 L410,210 L410,340" class="edge" />
+  <polygon points="440,340 432,336 432,344" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- COMMENTS                                   -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(440,555)">
+    <rect width="190" height="198" rx="6" class="node" fill="var(--comment)" />
+    <rect width="190" height="22" rx="6" fill="#5b21b6" />
+    <text x="95" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">comments</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">comment_id</text>
+    <text class="fk" x="6" y="48">FK question_id → questions</text>
+    <text class="fk" x="6" y="60">FK answer_id → answers</text>
+    <text class="fk" x="6" y="72">FK parent_id → comments (nullable)</text>
+    <text class="fk" x="6" y="84">FK root_comment_id → comments</text>
+    <text class="enum" x="6" y="96">depth: 0 | 1</text>
+    <text class="fk" x="6" y="108">FK author_id → users</text>
+    <text class="enum" x="6" y="120">author_role: USER | RESOLVER | ADMIN</text>
+    <text class="fld" x="6" y="132">body</text>
+    <text class="fld" x="6" y="144">mentions[]</text>
+    <text class="fld" x="6" y="156">upvotes, score, reply_count</text>
+    <text class="enum" x="6" y="168">visibility: public | hidden | deleted</text>
+    <text class="enum" x="6" y="180">moderation_status: approved | pending | rejected</text>
+    <text class="fld" x="6" y="192">edit_history[]</text>
+  </g>
+
+  <!-- QUESTIONS → COMMENTS -->
+  <path d="M630,50 L630,20 L870,20 L870,575" class="edge" />
+  <polygon points="630,555 626,563 634,563" fill="var(--line)" />
+
+  <!-- ANSWERS → COMMENTS -->
+  <path d="M630,536 L630,555" class="edge" />
+  <polygon points="630,555 626,547 634,547" fill="var(--line)" />
+
+  <!-- COMMENTS → COMMENTS (self-ref: parent_id) -->
+  <path d="M440,640 L430,640 L430,660 L420,660" class="edge-dashed" marker-end="url(#arrow)" />
+  <text x="408" y="636" class="fld">parent_id</text>
+
+  <!-- COMMENTS → COMMENTS (self-ref: root_comment_id) -->
+  <path d="M440,652 L430,652 L430,668 L420,668" class="edge-dashed" marker-end="url(#arrow)" />
+  <text x="395" y="664" class="fld">root_comment_id</text>
+
+  <!-- USERS → COMMENTS -->
+  <path d="M188,252 L400,252 L400,590" class="edge" />
+  <polygon points="440,590 432,586 432,594" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- VOTES                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(880,50)">
+    <rect width="168" height="126" rx="6" class="node" fill="var(--vote)" />
+    <rect width="168" height="22" rx="6" fill="#9d174d" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">votes</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">vote_id</text>
+    <text class="fk" x="6" y="48">FK user_id → users</text>
+    <text class="enum" x="6" y="60">target_type: question | answer | comment</text>
+    <text class="fld" x="6" y="72">target_id</text>
+    <text class="enum" x="6" y="84">value: 1 (upvote) | -1 (downvote)</text>
+    <text class="fld" x="6" y="96">[unique(user_id, target_type, target_id)]</text>
+  </g>
+
+  <!-- USERS → VOTES -->
+  <path d="M188,100 L860,100 L860,120" class="edge" />
+  <polygon points="880,120 872,116 872,124" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- FLAGS                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(880,200)">
+    <rect width="168" height="136" rx="6" class="node" fill="var(--flag)" />
+    <rect width="168" height="22" rx="6" fill="#7f1d1d" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">flags</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">flag_id</text>
+    <text class="enum" x="6" y="48">target_type: question | answer | comment</text>
+    <text class="fld" x="6" y="60">target_id</text>
+    <text class="fk" x="6" y="72">FK reported_by → users</text>
+    <text class="fld" x="6" y="84">reason, notes</text>
+    <text class="enum" x="6" y="96">status: pending | approved | rejected</text>
+    <text class="fld" x="6" y="108">reviewed_by, reviewed_at</text>
+    <text class="fld" x="6" y="120">review_action, resolution_note</text>
+  </g>
+
+  <!-- USERS → FLAGS -->
+  <path d="M188,150 L860,150 L860,200" class="edge" />
+  <polygon points="880,200 872,196 872,204" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- NOTIFICATIONS                              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(880,355)">
+    <rect width="168" height="166" rx="6" class="node" fill="var(--notif)" />
+    <rect width="168" height="22" rx="6" fill="#0c4a6e" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">notifications</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">notification_id</text>
+    <text class="fk" x="6" y="48">FK recipient_id → users</text>
+    <text class="fk" x="6" y="60">FK actor_id → users</text>
+    <text class="enum" x="6" y="72">type: answer | upvote | badge | mention | accepted | flag_resolved | comment | reply | warning | account_status</text>
+    <text class="fld" x="6" y="84">title, body</text>
+    <text class="fld" x="6" y="96">reference_id, reference_type</text>
+    <text class="fld" x="6" y="108">thread_anchor: { answer_id, root_comment_id }</text>
+    <text class="fld" x="6" y="120">is_read</text>
+  </g>
+
+  <!-- USERS → NOTIFICATIONS (recipient) -->
+  <path d="M188,194 L860,194 L860,355" class="edge" />
+  <polygon points="880,355 872,351 872,359" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SPARK_TRANSACTIONS                         -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(880,540)">
+    <rect width="168" height="106" rx="6" class="node" fill="var(--spark)" />
+    <rect width="168" height="22" rx="6" fill="#78350f" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">spark_transactions</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">transaction_id</text>
+    <text class="fk" x="6" y="48">FK user_id → users</text>
+    <text class="fld" x="6" y="60">action</text>
+    <text class="fld" x="6" y="72">points</text>
+    <text class="fld" x="6" y="84">reference_id</text>
+    <text class="enum" x="6" y="96">reference_type: question | answer</text>
+  </g>
+
+  <!-- USERS → SPARK_TRANSACTIONS -->
+  <path d="M188,238 L860,238 L860,540" class="edge" />
+  <polygon points="880,540 872,536 872,544" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- QUESTION_ASSIGNMENT_LOG                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(880,665)">
+    <rect width="168" height="106" rx="6" class="node" fill="var(--log)" />
+    <rect width="168" height="22" rx="6" fill="#334155" />
+    <text x="84" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="white">question_assignment_logs</text>
+
+    <text class="pk" x="6" y="36">PK</text><text class="fld" x="22" y="36">_id (ObjectId)</text>
+    <text class="fk" x="6" y="48">FK question_id → questions</text>
+    <text class="fk" x="6" y="60">FK resolver_id → users</text>
+    <text class="fld" x="6" y="72">assigned_by: 'SYSTEM' | user_id</text>
+    <text class="fld" x="6" y="84">reason, assigned_at, expires_at</text>
+  </g>
+
+  <!-- QUESTIONS → QUESTION_ASSIGNMENT_LOG -->
+  <path d="M630,100 L860,100 L860,665" class="edge" />
+  <polygon points="880,665 872,661 872,669" fill="var(--line)" />
+
+  <!-- USERS (resolver) → QUESTION_ASSIGNMENT_LOG -->
+  <path d="M188,290 L860,290 L860,700" class="edge" />
+  <polygon points="880,700 872,696 872,704" fill="var(--line)" />
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LEGEND                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <g transform="translate(20,590)">
+    <rect width="380" height="100" rx="6" class="legend-box" fill="var(--neutral)" />
+    <text x="12" y="20" class="lbl">Legend</text>
+
+    <rect x="12" y="30" width="14" height="10" rx="2" fill="var(--user)" stroke="var(--line)" />
+    <text x="32" y="40" class="legend-text">User / Profile</text>
+
+    <rect x="12" y="46" width="14" height="10" rx="2" fill="var(--question)" stroke="var(--line)" />
+    <text x="32" y="56" class="legend-text">Question</text>
+
+    <rect x="12" y="62" width="14" height="10" rx="2" fill="var(--answer)" stroke="var(--line)" />
+    <text x="32" y="72" class="legend-text">Answer</text>
+
+    <rect x="12" y="78" width="14" height="10" rx="2" fill="var(--comment)" stroke="var(--line)" />
+    <text x="32" y="88" class="legend-text">Comment</text>
+
+    <line x1="120" y1="35" x2="155" y2="35" stroke="var(--line)" stroke-width="1.5" />
+    <polygon points="155,35 149,31 149,39" fill="var(--line)" />
+    <text x="162" y="40" class="legend-text">1:N foreign key</text>
+
+    <line x1="120" y1="55" x2="155" y2="55" stroke="var(--line)" stroke-width="1.2" stroke-dasharray="4 3" />
+    <text x="162" y="60" class="legend-text">Self-referential FK</text>
+
+    <rect x="12" y="94" width="14" height="3" rx="1" fill="#b45309" />
+    <text x="32" y="100" class="legend-text">PK field</text>
+
+    <rect x="120" y="91" width="14" height="3" rx="1" fill="#1d4ed8" />
+    <text x="140" y="100" class="legend-text">FK field</text>
+  </g>
+
+  <!-- Title -->
+  <text x="680" y="905" text-anchor="middle" class="subtitle">Rogāre — Rogāre Platform ER Diagram · MongoDB/Mongoose</text>
+
+ <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="var(--line)" />
+    </marker>
+  </defs>
+
+</svg>
+</main>

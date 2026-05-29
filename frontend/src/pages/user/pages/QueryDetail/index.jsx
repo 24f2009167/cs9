@@ -252,55 +252,71 @@ function QueryDetailPage() {
             {answers.length === 0 && (
               <p className="mb-8 text-[13px] text-[#747878]">No replies yet — be the first to respond.</p>
             )}
-            {answers.map(ans => (
-              <ThreadItem
-                key={ans.answer_id}
-                authorName={ans.author_name}
-                isSelf={ans.author_id === user?.userId}
-                date={fmtDate(ans.created_at)}
-                body={ans.body}
-                accepted={ans.is_accepted}
-                score={(ans.upvotes ?? 0) - (ans.downvotes ?? 0)}
-                myVote={ans.my_vote ?? 0}
-                canAccept={isOwner && !hasAcceptedAnswer && ans.author_id !== user?.userId}
-                onAccept={() => handleAcceptAnswer(ans.answer_id)}
-                onVoteUp={() => handleVote(ans.answer_id, 'up')}
-                onVoteDown={() => handleVote(ans.answer_id, 'down')}
-                onReport={() => setReportTarget({ type: 'answer', id: ans.answer_id })}
-              >
-                <AnswerComments
-                  answerId={ans.answer_id}
-                  comments={commentsByAnswer[ans.answer_id] || []}
-                  currentUserId={user?.userId}
-                  onSubmit={handleComment}
-                />
-              </ThreadItem>
-            ))}
+            {answers.map(ans => {
+              const moderationState = ans.moderation_state || 'visible'
+              const hidden = moderationState !== 'visible'
+              return (
+                <ThreadItem
+                  key={ans.answer_id}
+                  authorName={ans.author_name}
+                  isSelf={ans.author_id === user?.userId}
+                  date={fmtDate(ans.created_at)}
+                  body={ans.body}
+                  moderationState={moderationState}
+                  accepted={ans.is_accepted}
+                  score={(ans.upvotes ?? 0) - (ans.downvotes ?? 0)}
+                  myVote={ans.my_vote ?? 0}
+                  canAccept={isOwner && !hasAcceptedAnswer && !hidden && ans.author_id !== user?.userId}
+                  onAccept={() => handleAcceptAnswer(ans.answer_id)}
+                  onVoteUp={() => handleVote(ans.answer_id, 'up')}
+                  onVoteDown={() => handleVote(ans.answer_id, 'down')}
+                  onReport={() => setReportTarget({ type: 'answer', id: ans.answer_id })}
+                >
+                  {!hidden && (
+                    <AnswerComments
+                      answerId={ans.answer_id}
+                      comments={commentsByAnswer[ans.answer_id] || []}
+                      currentUserId={user?.userId}
+                      locked={isResolved}
+                      onSubmit={handleComment}
+                    />
+                  )}
+                </ThreadItem>
+              )
+            })}
 
-            {/* Reply box */}
-            <div className="relative mt-8">
-              <div className="absolute -left-[54px] top-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-[#8c6a40] text-[12px] font-bold text-white ring-4 ring-[#f3f4f6]">
-                {initialsOf(user?.name)}
-              </div>
-              <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                <textarea
-                  value={reply}
-                  onChange={e => setReply(e.target.value)}
-                  placeholder="Drop your resolution, comment, or suggestions here…"
-                  className="min-h-[80px] w-full resize-y text-[13px] leading-6 text-[#191c1d] outline-none placeholder:text-[#9ca3af]"
-                />
-                <div className="mt-2 flex justify-end border-t border-[#f3f4f6] pt-4">
-                  <button
-                    type="button"
-                    onClick={handlePostReply}
-                    disabled={posting}
-                    className="rounded-lg bg-[#8c6a40] px-5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7a5c35] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {posting ? 'Posting…' : 'Submit Reply'}
-                  </button>
+            {/* Reply box — closed once the question is resolved */}
+            {isResolved ? (
+              <div className="relative mt-8">
+                <div className="rounded-xl border border-dashed border-[#c4c7c7] bg-[#f8f9fa] px-5 py-4 text-center text-[13px] text-[#747878]">
+                  This question is resolved — new replies are closed.
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="relative mt-8">
+                <div className="absolute -left-[54px] top-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-[#8c6a40] text-[12px] font-bold text-white ring-4 ring-[#f3f4f6]">
+                  {initialsOf(user?.name)}
+                </div>
+                <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                  <textarea
+                    value={reply}
+                    onChange={e => setReply(e.target.value)}
+                    placeholder="Drop your resolution, comment, or suggestions here…"
+                    className="min-h-[80px] w-full resize-y text-[13px] leading-6 text-[#191c1d] outline-none placeholder:text-[#9ca3af]"
+                  />
+                  <div className="mt-2 flex justify-end border-t border-[#f3f4f6] pt-4">
+                    <button
+                      type="button"
+                      onClick={handlePostReply}
+                      disabled={posting}
+                      className="rounded-lg bg-[#8c6a40] px-5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7a5c35] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {posting ? 'Posting…' : 'Submit Reply'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -385,16 +401,21 @@ function QueryDetailPage() {
 // ── Thread item (OP or answer) ──────────────────────────────────────────────
 function ThreadItem({
   authorName, isSelf, date, body, isOriginal, accepted, score, myVote = 0,
-  canAccept = false, onAccept, onVoteUp, onVoteDown, onReport, children,
+  moderationState = 'visible', canAccept = false, onAccept, onVoteUp, onVoteDown, onReport, children,
 }) {
   const initials = initialsOf(authorName)
+  const hidden = moderationState !== 'visible'
+  const tombstone = moderationState === 'deleted'
+    ? `This reply from ${authorName} was deleted.`
+    : `This reply from ${authorName} is under review.`
+
   return (
     <div className="relative mb-8">
-      <div className="absolute -left-[60px] top-0 flex h-12 w-12 items-center justify-center rounded-lg bg-[#191c1d] text-[14px] font-bold text-white ring-4 ring-[#f3f4f6]">
+      <div className={`absolute -left-[60px] top-0 flex h-12 w-12 items-center justify-center rounded-lg text-[14px] font-bold text-white ring-4 ring-[#f3f4f6] ${hidden ? 'bg-[#9ca3af]' : 'bg-[#191c1d]'}`}>
         {initials}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-sm">
+      <div className={`overflow-hidden rounded-xl border bg-white shadow-sm ${hidden ? 'border-dashed border-[#d1d5db]' : 'border-[#e5e7eb]'}`}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#f3f4f6] px-5 py-3">
           <div className="flex items-center gap-3">
@@ -405,21 +426,31 @@ function ThreadItem({
               {isOriginal ? 'opened this' : 'commented'} {date}
             </span>
           </div>
-          {accepted && (
+          {accepted && !hidden && (
             <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#16a34a]">
               <Check className="h-3.5 w-3.5" strokeWidth={3} /> SOLUTION
             </span>
           )}
+          {hidden && (
+            <span className={`flex items-center gap-1.5 text-[11px] font-bold ${moderationState === 'deleted' ? 'text-[#9ca3af]' : 'text-[#b45309]'}`}>
+              <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {moderationState === 'deleted' ? 'DELETED' : 'UNDER REVIEW'}
+            </span>
+          )}
         </div>
 
-        {/* Body */}
-        <div
-          className="px-5 py-5 text-[14px] leading-6 text-[#4b5563]"
-          dangerouslySetInnerHTML={{ __html: body }}
-        />
+        {/* Body — tombstone when hidden */}
+        {hidden ? (
+          <p className="px-5 py-5 text-[13px] italic leading-6 text-[#9ca3af]">{tombstone}</p>
+        ) : (
+          <div
+            className="px-5 py-5 text-[14px] leading-6 text-[#4b5563]"
+            dangerouslySetInnerHTML={{ __html: body }}
+          />
+        )}
 
-        {/* Footer (answers only) */}
-        {!isOriginal && (
+        {/* Footer (visible answers only) */}
+        {!isOriginal && !hidden && (
           <div className="flex items-center justify-between border-t border-[#f3f4f6] bg-[#fafafa] px-5 py-3">
             <div className="flex items-center gap-2 text-[14px] font-bold text-[#191c1d]">
               <button
