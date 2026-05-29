@@ -19,10 +19,10 @@ function cookieOptions() {
   }
 }
 
-function safeUser(user, roles) {
+function safeUser(user, roles, profile = null) {
   return {
     userId: user.user_id,
-    name: user.name,
+    name: profile?.display_name || user.name,
     email: user.email,
     role: getPrimaryRole(roles),
     roles,
@@ -94,9 +94,9 @@ export async function signup(req, res, next) {
       user_id: user.user_id,
       role_id: role.role_id,
     })
-    await UserProfile.create({ user_id: user.user_id, display_name: user.name })
+    const profile = await UserProfile.create({ user_id: user.user_id, display_name: user.name })
 
-    const responseUser = safeUser(user, ['USER'])
+    const responseUser = safeUser(user, ['USER'], profile)
     res.status(201).json({
       success: true,
       userId: user.user_id,
@@ -130,6 +130,7 @@ export async function login(req, res, next) {
     }
 
     const roles = await getUserRoles(user)
+    const profile = await UserProfile.findOne({ user_id: user.user_id }).lean()
     const today = new Date().toISOString().slice(0, 10)
     const previousLoginDay = user.last_login_at?.toISOString().slice(0, 10)
 
@@ -143,7 +144,7 @@ export async function login(req, res, next) {
     )
 
     res.cookie(cookieName, signAuthToken({ userId: user.user_id }), cookieOptions())
-    const responseUser = safeUser(user, roles)
+    const responseUser = safeUser(user, roles, profile)
 
     res.json({
       success: true,
@@ -164,11 +165,16 @@ export function logout(_req, res) {
   res.json({ success: true, message: 'Logged out successfully' })
 }
 
-export function me(req, res) {
-  const responseUser = safeUser(req.authUser, req.user.roles)
+export async function me(req, res, next) {
+  try {
+    const profile = await UserProfile.findOne({ user_id: req.user.userId }).lean()
+    const responseUser = safeUser(req.authUser, req.user.roles, profile)
 
-  res.json({
-    success: true,
-    user: responseUser,
-  })
+    res.json({
+      success: true,
+      user: responseUser,
+    })
+  } catch (error) {
+    next(error)
+  }
 }

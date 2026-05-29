@@ -3,6 +3,7 @@ import Comment from '../models/comment.model.js'
 import Notification from '../models/notification.model.js'
 import Question from '../models/question.model.js'
 import User from '../models/user.model.js'
+import UserProfile from '../models/user-profile.model.js'
 import Vote from '../models/vote.model.js'
 import { awardSpark, reserveBounty } from '../services/spark.service.js'
 import {
@@ -34,6 +35,28 @@ const GENERIC_FAQ_TAGS = new Set(['faq', 'internship', 'vins'])
 function getFaqTags(faq) {
   const tags = normalizeTags(faq.tags)
   return tags.filter((tag) => !GENERIC_FAQ_TAGS.has(tag.toLowerCase()))
+}
+
+async function getDisplayNameByUserId(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))]
+
+  if (!ids.length) {
+    return {}
+  }
+
+  const [users, profiles] = await Promise.all([
+    User.find({ user_id: { $in: ids } }).select('user_id name').lean(),
+    UserProfile.find({ user_id: { $in: ids } }).select('user_id display_name').lean(),
+  ])
+  const displayNameById = Object.fromEntries(users.map((u) => [u.user_id, u.name]))
+
+  for (const profile of profiles) {
+    if (profile.display_name) {
+      displayNameById[profile.user_id] = profile.display_name
+    }
+  }
+
+  return displayNameById
 }
 
 export async function listPublishedFAQs(req, res, next) {
@@ -194,12 +217,7 @@ export async function listQuestions(req, res, next) {
       Question.countDocuments(filter),
     ])
 
-    // Map author display names from author_id (single batched lookup)
-    const authorIds = [...new Set(questions.map((q) => q.author_id))]
-    const users = await User.find({ user_id: { $in: authorIds } })
-      .select('user_id name')
-      .lean()
-    const nameById = Object.fromEntries(users.map((u) => [u.user_id, u.name]))
+    const nameById = await getDisplayNameByUserId(questions.map((q) => q.author_id))
 
     res.json({
       success: true,
@@ -268,16 +286,12 @@ export async function getQuestionById(req, res, next) {
       includeComments ? Comment.find({ question_id: question.question_id }).sort({ created_at: 1 }).lean() : [],
     ])
 
-    // Attach author display names without a per-row lookup
-    const authorIds = new Set([
+    const authorIds = [
       question.author_id,
       ...answers.map((a) => a.author_id),
       ...comments.map((c) => c.author_id),
-    ])
-    const users = await User.find({ user_id: { $in: [...authorIds] } })
-      .select('user_id name')
-      .lean()
-    const nameById = Object.fromEntries(users.map((u) => [u.user_id, u.name]))
+    ]
+    const nameById = await getDisplayNameByUserId(authorIds)
 
     const admin = isAdmin(req)
     function moderationState(doc) {

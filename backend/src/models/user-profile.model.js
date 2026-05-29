@@ -63,4 +63,6 @@ const userProfileSchema = new mongoose.Schema(
   },
 )
 
+userProfileSchema.index({ display_name: 1 })
+
 export default mongoose.model('UserProfile', userProfileSchema)

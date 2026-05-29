@@ -14,12 +14,12 @@ import {
   paginationResult,
 } from '../utils/http.js'
 
-function publicUser(user, roles, includeEmail = false) {
+function publicUser(user, roles, includeEmail = false, profile = null) {
   const value = {
     id: user.user_id,
-    name: user.name,
+    name: profile?.display_name || user.name,
     roles,
-    avatarUrl: user.avatar_url,
+    avatarUrl: profile?.avatar_url || '',
     sparkPoints: user.spark_points || 0,
     createdAt: user.created_at,
   }
@@ -79,9 +79,17 @@ export async function listUsers(req, res, next) {
       User.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit),
       User.countDocuments(filter),
     ])
+    const profiles = await UserProfile.find({
+      user_id: { $in: users.map((user) => user.user_id) },
+    }).lean()
+    const profileByUserId = Object.fromEntries(
+      profiles.map((profile) => [profile.user_id, profile]),
+    )
 
     const result = await Promise.all(
-      users.map(async (user) => publicUser(user, await getUserRoles(user), true)),
+      users.map(async (user) =>
+        publicUser(user, await getUserRoles(user), true, profileByUserId[user.user_id]),
+      ),
     )
 
     res.json({
@@ -121,7 +129,7 @@ export async function getUserById(req, res, next) {
     res.json({
       success: true,
       user: {
-        ...publicUser(user, roles, canViewEmail),
+        ...publicUser(user, roles, canViewEmail, profile),
         profile: publicProfile(profile, canViewEmail),
         stats: { questionsCount, answersCount, acceptedAnswersCount },
       },

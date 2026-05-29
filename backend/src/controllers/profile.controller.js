@@ -9,7 +9,7 @@ function toProfile(user, profile) {
     userId: user.user_id,
     displayName: profile?.display_name || user.name,
     bio: profile?.bio || '',
-    avatarUrl: profile?.avatar_url || user.avatar_url || '',
+    avatarUrl: profile?.avatar_url || '',
     expertise: profile?.expertise || [],
     location: profile?.location || '',
     socialLinks: profile?.social_links || {},
@@ -51,16 +51,6 @@ export async function updateMyProfile(req, res, next) {
       { $set: updates, $setOnInsert: { user_id: req.user.userId } },
       { new: true, upsert: true, runValidators: true },
     )
-
-    if (req.body.avatarUrl !== undefined) {
-      req.authUser.avatar_url = req.body.avatarUrl
-      await req.authUser.save()
-    }
-
-    if (req.body.displayName !== undefined) {
-      req.authUser.name = req.body.displayName
-      await req.authUser.save()
-    }
 
     res.json({ success: true, profile: toProfile(req.authUser, profile) })
   } catch (error) {

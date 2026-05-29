@@ -10,6 +10,28 @@ import {
   paginationResult,
 } from '../utils/http.js'
 
+async function getDisplayNameByUserId(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))]
+
+  if (!ids.length) {
+    return {}
+  }
+
+  const [users, profiles] = await Promise.all([
+    User.find({ user_id: { $in: ids } }).select('user_id name').lean(),
+    UserProfile.find({ user_id: { $in: ids } }).select('user_id display_name').lean(),
+  ])
+  const displayNameById = Object.fromEntries(users.map((user) => [user.user_id, user.name]))
+
+  for (const profile of profiles) {
+    if (profile.display_name) {
+      displayNameById[profile.user_id] = profile.display_name
+    }
+  }
+
+  return displayNameById
+}
+
 export async function getSparkBalance(req, res, next) {
   try {
     const profile = await UserProfile.findOne({ user_id: req.user.userId })
@@ -84,13 +106,14 @@ export async function getLeaderboard(req, res, next) {
         user_id: { $in: candidateUserIds },
       }).lean()
       const byId = Object.fromEntries(users.map((user) => [user.user_id, user]))
+      const displayNameById = await getDisplayNameByUserId(users.map((user) => user.user_id))
 
       leaderboard = rows
         .filter((row) => byId[row._id])
         .slice(0, limit)
         .map((row) => ({
           userId: row._id,
-          displayName: byId[row._id].name,
+          displayName: displayNameById[row._id] || byId[row._id].name,
           score: row.score,
         }))
     } else if (type === 'reputation') {
@@ -113,9 +136,10 @@ export async function getLeaderboard(req, res, next) {
         }))
     } else {
       const users = await User.find(userFilter).sort({ spark_points: -1 }).limit(limit).lean()
+      const displayNameById = await getDisplayNameByUserId(users.map((user) => user.user_id))
       leaderboard = users.map((user) => ({
         userId: user.user_id,
-        displayName: user.name,
+        displayName: displayNameById[user.user_id] || user.name,
         score: user.spark_points || 0,
       }))
     }

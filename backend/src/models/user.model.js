@@ -63,7 +63,6 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
     last_login_at: Date,
-    avatar_url: String,
   },
   {
     collection: 'users',
