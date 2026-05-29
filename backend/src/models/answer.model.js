@@ -118,7 +118,6 @@ const answerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    upvoted_by: [String],
 
     downvotes: {
       type: Number,

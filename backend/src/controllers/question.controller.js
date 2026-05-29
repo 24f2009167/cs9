@@ -490,24 +490,37 @@ export async function voteQuestion(req, res, next) {
       throw createHttpError(403, 'Cannot vote on your own question')
     }
 
-    const hasVoted = question.upvoted_by.includes(userId)
+    const existingVote = await Vote.findOne({
+      user_id: userId,
+      target_type: 'question',
+      target_id: question.question_id,
+    })
 
-    if (hasVoted) {
+    if (existingVote) {
+      await existingVote.deleteOne()
       await Question.updateOne(
         { question_id: questionId },
-        { $pull: { upvoted_by: userId }, $inc: { upvotes: -1 } },
+        { $inc: { upvotes: -1 } },
       )
     } else {
+      await Vote.create({
+        user_id: userId,
+        target_type: 'question',
+        target_id: question.question_id,
+        value: 1,
+      })
       await Question.updateOne(
         { question_id: questionId },
-        { $addToSet: { upvoted_by: userId }, $inc: { upvotes: 1 } },
+        { $inc: { upvotes: 1 } },
       )
     }
 
+    const updated = await Question.findOne({ question_id: questionId }).select('upvotes').lean()
+
     res.json({
       success: true,
-      upvotes: hasVoted ? question.upvotes - 1 : question.upvotes + 1,
-      hasVoted: !hasVoted,
+      upvotes: updated?.upvotes || 0,
+      hasVoted: !existingVote,
     })
   } catch (error) {
     next(error)

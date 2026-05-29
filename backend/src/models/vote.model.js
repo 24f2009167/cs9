@@ -63,5 +63,6 @@ voteSchema.index({ user_id: 1, created_at: -1 })
 
 // Rebuild a target's counters from scratch.
 voteSchema.index({ target_type: 1, target_id: 1 })
+voteSchema.index({ target_type: 1, target_id: 1, value: 1 })
 
 export default mongoose.model('Vote', voteSchema)
