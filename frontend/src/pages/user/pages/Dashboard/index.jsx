@@ -213,7 +213,7 @@ function DashboardPage() {
               <>
                 <div className="relative pl-5">
                   <div className="absolute bottom-2.5 left-1 top-2.5 w-px bg-[#d1d5db]" />
-                  {[...contributions].reverse().map((item, i) => {
+                  {[...contributions].sort((a, b) => new Date(b.time) - new Date(a.time)).map((item, i) => {
                     const color =
                       item.type === 'question' ? '#8c6a40'
                       : item.type === 'answer'  ? '#16a34a'
