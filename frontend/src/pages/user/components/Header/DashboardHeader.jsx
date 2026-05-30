@@ -3,11 +3,26 @@ import {
   Popover, PopoverButton, PopoverPanel,
   Menu, MenuButton, MenuItems, MenuItem,
 } from '@headlessui/react'
-import { Settings, Search, SlidersHorizontal, PlusCircle, Bell, LogOut, Moon, Sun } from 'lucide-react'
+import { Settings, Search, SlidersHorizontal, PlusCircle, Bell, LogOut, Moon, Sun, Tag } from 'lucide-react'
 import { timeAgo } from '../../service'
 import Button from '../../../../components/Button/Button'
 
-const ALL_TAGS = ['DSA', 'Web Dev', 'CP', 'AI/ML', 'Systems', 'OS', 'DBMS', 'OOP', 'Aptitude', 'Interview Exp']
+// Tag → icon/color map (matches SearchModal styleForTag)
+function styleForTag(tag) {
+  const map = {
+    'DSA':           { Icon: () => <span className="text-[10px] font-bold">&#123;&#125;</span>, color: '#8c6a40', bg: '#f5f0e8' },
+    'Web Dev':       { Icon: () => <span className="text-[10px] font-bold">&#60;/&#62;</span>, color: '#3b82f6', bg: '#eff6ff' },
+    'CP':            { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#f59e0b', bg: '#fffbeb' },
+    'AI/ML':         { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#8b5cf6', bg: '#f5f3ff' },
+    'Systems':       { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#64748b', bg: '#f8fafc' },
+    'OS':            { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#16a34a', bg: '#f0fdf4' },
+    'DBMS':          { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#0d9488', bg: '#f0fdfa' },
+    'OOP':           { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#9333ea', bg: '#faf5ff' },
+    'Aptitude':      { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#dc2626', bg: '#fef2f2' },
+    'Interview Exp': { Icon: () => <span className="text-[10px] font-bold">&#42;</span>,       color: '#ca8a04', bg: '#fefce8' },
+  }
+  return map[tag] || { Icon: () => null, color: '#8c6a40', bg: '#f5f0e8' }
+}
 
 function DashboardHeader({
   user,
@@ -17,19 +32,20 @@ function DashboardHeader({
   notifications,
   unreadCount,
   isDark,
-  onSearchOpen,         // fn(value: string) — called on search input change
+  onSearchOpen,
   onRaiseQuery,
   onNotifOpen,
   onNotifViewAll,
   onDarkToggle,
   onProfileSettings,
   onLogout,
-  selectedTags = [],    // string[], from layout state
-  onTagsChange,         // fn(tags: string[]), called when tag toggled in popover
+  tags = [],              // { tag, count }[] from API (fetchQuestionTags)
+  selectedTags = [],
+  onTagsChange,
 }) {
   const [localTags, setLocalTags] = useState(selectedTags)
 
-  function handleTagToggle(tag) {
+  function toggleTag(tag) {
     const next = localTags.includes(tag)
       ? localTags.filter(t => t !== tag)
       : [...localTags, tag]
@@ -37,7 +53,12 @@ function DashboardHeader({
     onTagsChange?.(next)
   }
 
-  const activeTagCount = localTags.length
+  function clearAll() {
+    setLocalTags([])
+    onTagsChange?.([])
+  }
+
+  const activeCount = localTags.length
 
   return (
     <header className="relative flex items-center justify-between border-b border-[#c4c7c7] bg-white px-8 py-4">
@@ -56,49 +77,83 @@ function DashboardHeader({
 
         <span className="h-4 w-px bg-[#c4c7c7]" />
 
-        {/* Filter — tag popover */}
+        {/* Filter — tag popover, opens to the right of the search bar */}
         <Popover>
           <PopoverButton className="relative flex shrink-0 items-center gap-1 text-[#9ca3af] transition hover:text-[#191c1d]">
             <SlidersHorizontal className="h-4 w-4" strokeWidth={1.8} />
-            {activeTagCount > 0 && (
+            {activeCount > 0 && (
               <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#8c6a40] text-[9px] font-bold text-white">
-                {activeTagCount}
+                {activeCount}
               </span>
             )}
           </PopoverButton>
 
-          <PopoverPanel className="absolute left-0 top-10 z-50 w-64 overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-xl focus:outline-none">
-            <p className="border-b border-[#f3f4f6] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#9ca3af]">
-              Filter by tag
-            </p>
-            <div className="flex flex-wrap gap-1.5 p-3">
-              {ALL_TAGS.map(tag => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => handleTagToggle(tag)}
-                  className={`rounded-full border px-2.5 py-1 text-[12px] font-medium transition ${
-                    localTags.includes(tag)
-                      ? 'border-[#8c6a40] bg-[#8c6a40] text-white'
-                      : 'border-[#dde1e3] text-[#444748] hover:border-[#8c6a40] hover:text-[#8c6a40]'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-            {activeTagCount > 0 && (
-              <div className="border-t border-[#f3f4f6] px-3 py-2">
-                <button
-                  type="button"
-                  onClick={() => { setLocalTags([]); onTagsChange?.([]) }}
-                  className="text-[11px] font-semibold text-[#8c6a40] hover:underline"
-                >
-                  Clear all
-                </button>
+          {/* Popover: positioned to the right of the search bar (aligned to search bar's right edge) */}
+          <div className="absolute left-0 top-full z-50 w-[280px]">
+            <PopoverPanel
+              className="mt-1 overflow-hidden rounded-xl border border-[#e5e7eb] bg-white/95 shadow-xl backdrop-blur-sm focus:outline-none"
+            >
+              {/* Header row */}
+              <div className="flex items-center justify-between border-b border-[#f3f4f6] px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280]">
+                    Categories
+                  </span>
+                  {activeCount > 0 && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#8c6a40]/12 text-[10px] font-semibold text-[#8c6a40]">
+                      {activeCount}
+                    </span>
+                  )}
+                </div>
+                {activeCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="text-[11px] font-medium text-[#8c6a40] underline-offset-2 transition hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
-            )}
-          </PopoverPanel>
+
+              {/* Tag list */}
+              <div className="flex flex-wrap gap-2 p-3">
+                {tags.length === 0 ? (
+                  <p className="py-2 text-[12px] text-[#9ca3af]">No categories yet.</p>
+                ) : (
+                  tags.map(({ tag, count }) => {
+                    const { color, bg } = styleForTag(tag)
+                    const isSelected = localTags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-[12px] font-medium transition hover:-translate-y-0.5 hover:shadow-sm ${
+                          isSelected
+                            ? 'border-[#8c6a40] bg-[#8c6a40]/5 text-[#8c6a40]'
+                            : 'border-[#e5e7eb] text-[#444748] hover:border-[#8c6a40] hover:text-[#8c6a40]'
+                        }`}
+                      >
+                        <span
+                          className="flex h-5 w-5 items-center justify-center rounded"
+                          style={{ background: bg, color }}
+                        >
+                          <Tag className="h-3 w-3" strokeWidth={2} />
+                        </span>
+                        {tag}
+                        {count != null && (
+                          <span className={`text-[10px] ${isSelected ? 'text-[#8c6a40]/70' : 'text-[#9ca3af]'}`}>
+                            {count}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </PopoverPanel>
+          </div>
         </Popover>
       </div>
 
@@ -107,10 +162,10 @@ function DashboardHeader({
         {showRaiseQuery && (
           <Button
             variant="secondary"
-            className="gap-2 rounded-lg border-transparent bg-[#8c6a40]/80 px-4 text-[11px] font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-[#7a5c35]"
+            className="gap-1.5 rounded-lg border-transparent bg-[#8c6a40]/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-[#7a5c35]"
             onClick={onRaiseQuery}
           >
-            <PlusCircle className="h-4 w-4" strokeWidth={1.8} /> Raise New Query
+            <PlusCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Raise New Query
           </Button>
         )}
 

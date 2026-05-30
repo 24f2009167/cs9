@@ -7,7 +7,7 @@ import NotificationSidebar from './components/NotifSidebar/NotificationSidebar'
 import useAuthStore from '../../store/useAuthStore'
 import useThemeStore from '../../store/useThemeStore'
 import { queryClient } from '../../lib/queryClient'
-import { fetchNotifications, markAllNotifRead, logoutUser } from './service'
+import { fetchNotifications, markAllNotifRead, logoutUser, fetchQuestionTags } from './service'
 
 function UserLayout() {
   const navigate = useNavigate()
@@ -24,6 +24,7 @@ function UserLayout() {
   const [notifSidebarOpen, setNotifSidebarOpen] = useState(false)
   const [selectedTags, setSelectedTags]    = useState([])
   const [searchQuery, setSearchQuery]      = useState('')
+  const [tags, setTags]                   = useState([])
 
   const initials = user?.name
     ? user.name.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase()
@@ -34,6 +35,12 @@ function UserLayout() {
       .then(data => {
         setNotifications(data.notifications || [])
         setUnreadCount(data.unreadCount ?? 0)
+      })
+      .catch(() => {})
+
+    fetchQuestionTags()
+      .then(data => {
+        setTags(Array.isArray(data) ? data : [])
       })
       .catch(() => {})
   }, [])
@@ -90,7 +97,6 @@ function UserLayout() {
             }
             setSidebarNav(label)
             setCurrentView('dashboard')
-            // Clear cached questions so the dashboard refetches and Similar Queries resets
             queryClient.removeQueries({ queryKey: ['dashboardQuestions'] })
             navigate('/dashboard')
           }}
@@ -106,6 +112,7 @@ function UserLayout() {
             toggleDark={toggleDark}
             searchQuery={searchQuery}
             onSearchOpen={setSearchQuery}
+            tags={tags}
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
             onNotifOpen={handleNotifOpen}
