@@ -5,7 +5,6 @@ const base = {
   position: 'top-right',
   autoClose: 3000,
   hideProgressBar: true,
-  closeButton: false,
   style: {
     background: '#191c1d',
     color: '#ffffff',

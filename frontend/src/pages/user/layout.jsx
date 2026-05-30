@@ -4,6 +4,7 @@ import DashboardHeader from './components/Header/DashboardHeader'
 import LeftPane from './components/LeftPane/LeftPane'
 import Footer from '../../components/Footer/Footer'
 import useAuthStore from '../../store/useAuthStore'
+import useThemeStore from '../../store/useThemeStore'
 import { queryClient } from '../../lib/queryClient'
 import { fetchNotifications, markAllNotifRead, logoutUser } from './service'
 
@@ -11,10 +12,11 @@ function UserLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, clearUser } = useAuthStore()
+  const isDark = useThemeStore(s => s.isDark)
+  const toggleDark = useThemeStore(s => s.toggleDark)
 
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount]     = useState(0)
-  const [isDark, setIsDark]               = useState(false)
   const [isLeftPaneCollapsed, setIsLeftPaneCollapsed] = useState(false)
   const [currentView, setCurrentView]     = useState('dashboard')
   const [sidebarNav, setSidebarNav]        = useState('Dashboard')
@@ -56,7 +58,7 @@ function UserLayout() {
   return (
     <div
       className={`flex min-h-svh flex-col bg-[#f3f4f6] text-[#191c1d] ${
-        isDark ? 'filter-[invert(1)_hue-rotate(180deg)]' : ''
+        isDark ? 'theme-invert' : ''
       }`}
     >
       {/* Main row: LeftPane + content */}
@@ -91,7 +93,7 @@ function UserLayout() {
             onSearchOpen={() => setSearchModalOpen(true)}
             onRaiseQuery={() => navigate('/raise-query')}
             onNotifOpen={handleNotifOpen}
-            onDarkToggle={() => setIsDark(v => !v)}
+            onDarkToggle={toggleDark}
             onProfileSettings={() => navigate('/profile')}
             onLogout={handleLogout}
           />

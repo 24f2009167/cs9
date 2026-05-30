@@ -38,6 +38,19 @@ a {
   font-family: "Playfair Display", Georgia, serif;
 }
 
+/* Lightweight dark mode: invert + hue-rotate keeps brand hues roughly intact.
+   Applied to the layout wrapper and to portaled modal panels (which render
+   outside that wrapper) so they stay in sync. */
+.theme-invert {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Re-invert raster media so photos/video render with natural colors. */
+.theme-invert img,
+.theme-invert video {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 ::-webkit-scrollbar {
   height: 4px;
   width: 4px;

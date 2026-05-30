@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Dialog, DialogPanel } from '@headlessui/react'
 import { Search, Tag, X } from 'lucide-react'
 import { styleForTag } from '../../constants'
+import useThemeStore from '../../../../store/useThemeStore'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,9 @@ const SearchModal: FC<SearchModalProps> = ({
   const [searchInput, setSearchInput] = useState(initialSearch)
   const [pendingTags, setPendingTags] = useState(initialTags)
   const inputRef = useRef<HTMLInputElement>(null)
+  // The Dialog portals to <body>, outside the layout's invert wrapper, so the
+  // panel must invert itself to stay in sync with dark mode.
+  const isDark = useThemeStore(s => s.isDark)
 
   // Seed draft state when the modal opens
   useEffect(() => {
@@ -67,7 +71,7 @@ const SearchModal: FC<SearchModalProps> = ({
   return (
     <Dialog open={open} onClose={onClose ?? (() => {})} className="relative z-[2000]">
       <div className="fixed inset-0 flex items-start justify-center bg-black/40 pt-[120px] backdrop-blur-sm">
-        <DialogPanel className="flex w-full max-w-[1040px] flex-col rounded-2xl bg-white p-8 shadow-2xl">
+        <DialogPanel className={`flex w-full max-w-[1040px] flex-col rounded-2xl bg-white p-8 shadow-2xl${isDark ? ' theme-invert' : ''}`}>
           {/* Search input */}
           <div className="mb-8 flex items-center gap-3 rounded-xl border-2 border-[#8c6a40] bg-white px-5 py-3.5 shadow-sm">
             <Search className="h-5 w-5 shrink-0 text-[#8c6a40]" strokeWidth={1.8} />

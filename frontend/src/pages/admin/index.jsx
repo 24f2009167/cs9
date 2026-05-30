@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../store/useAuthStore'
+import useThemeStore from '../../store/useThemeStore'
 import AdminHeader from './components/Header/AdminHeader'
 import AdminLeftPane from './components/LeftPane/AdminLeftPane'
 import FAQManagementView from './pages/FAQManagement'
@@ -20,13 +21,14 @@ const DashboardView = lazy(() => import('./pages/Dashboard'))
 function AdminHome() {
   const navigate = useNavigate()
   const { user, clearUser } = useAuthStore()
+  const isDark = useThemeStore(s => s.isDark)
+  const toggleDark = useThemeStore(s => s.toggleDark)
   const [currentAdminView, setCurrentAdminView] = useState('dashboard')
   const [dashboardData, setDashboardData] = useState(null)
   const [isDashboardLoading, setIsDashboardLoading] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isDark, setIsDark] = useState(false)
 
   const initials = user?.name
     ? user.name
@@ -137,7 +139,7 @@ function AdminHome() {
   return (
     <div
       className={`flex min-h-svh bg-[#f3f4f6] text-[#111827] ${
-        isDark ? 'filter-[invert(1)_hue-rotate(180deg)]' : ''
+        isDark ? 'theme-invert' : ''
       }`}
     >
       <AdminLeftPane currentView={currentAdminView} onNavigate={setCurrentAdminView} />
@@ -153,7 +155,7 @@ function AdminHome() {
           onSearchChange={setSearchQuery}
           onSearchSubmit={handleSearchSubmit}
           onNotificationsOpen={handleNotificationsOpen}
-          onDarkToggle={() => setIsDark(v => !v)}
+          onDarkToggle={toggleDark}
           onLanding={() => navigate('/')}
           onLogout={handleLogout}
           onProfileSettings={handleProfileSettings}
