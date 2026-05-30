@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useLayoutEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import DashboardHeader from './components/Header/DashboardHeader'
 import LeftPane from './components/LeftPane/LeftPane'
@@ -15,6 +15,11 @@ function UserLayout() {
   const { user, clearUser } = useAuthStore()
   const isDark = useThemeStore(s => s.isDark)
   const toggleDark = useThemeStore(s => s.toggleDark)
+
+  // Sync .dark class to <body> so CSS variables + dark: variants propagate globally
+  useLayoutEffect(() => {
+    document.body.classList[isDark ? 'add' : 'remove']('dark')
+  }, [isDark])
 
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount]     = useState(0)
@@ -80,7 +85,7 @@ function UserLayout() {
   return (
     <div
       className={`flex min-h-svh flex-col bg-[#f3f4f6] text-[#191c1d] ${
-        isDark ? 'theme-invert' : ''
+        isDark ? 'dark' : ''
       }`}
     >
       {/* Main row: LeftPane + content */}
@@ -109,7 +114,7 @@ function UserLayout() {
             notifications={notifications}
             unreadCount={unreadCount}
             isDark={isDark}
-            toggleDark={toggleDark}
+            onDarkToggle={toggleDark}
             searchQuery={searchQuery}
             onSearchOpen={setSearchQuery}
             tags={tags}

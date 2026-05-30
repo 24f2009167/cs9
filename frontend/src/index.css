@@ -1,14 +1,58 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap");
 @import "tailwindcss";
 
+/* Register class-based dark: variant (Tailwind v4) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Theme: Tailwind v4 reads CSS custom properties from @theme */
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-card: var(--bg-card);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-hover-bg: var(--hover-bg);
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Playfair Display", Georgia, serif;
+}
+
+/* Light theme — defaults */
 :root {
-  color: #191c1d;
-  background: #f8f9fa;
-  font-family: "Inter", system-ui, sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg-primary:     #f3f4f6;
+  --bg-secondary:   #ffffff;
+  --bg-tertiary:    #edeeef;
+  --bg-card:        #ffffff;
+  --text-primary:   #191c1d;
+  --text-secondary: #444748;
+  --text-muted:     #747878;
+  --border:         #c4c7c7;
+  --border-light:   #e5e7eb;
+  --brand:          #8c6a40;
+  --brand-hover:    #7a5c35;
+  --hover-bg:       #edeeef;
+}
+
+/* Dark theme — applied when .dark class is on a parent element */
+.dark {
+  --bg-primary:     #121418;
+  --bg-secondary:   #1a1d23;
+  --bg-tertiary:    #22262e;
+  --bg-card:        #1e2128;
+  --text-primary:   #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-muted:     #6b7280;
+  --border:         #3c4043;
+  --border-light:   #2d3139;
+  --brand:          #a0876a;
+  --brand-hover:    #8c7355;
+  --hover-bg:       #2a2e38;
 }
 
 * {
@@ -22,6 +66,13 @@ html {
 body {
   margin: 0;
   min-height: 100svh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -36,19 +87,6 @@ a {
 
 .font-display {
   font-family: "Playfair Display", Georgia, serif;
-}
-
-/* Lightweight dark mode: invert + hue-rotate keeps brand hues roughly intact.
-   Applied to the layout wrapper and to portaled modal panels (which render
-   outside that wrapper) so they stay in sync. */
-.theme-invert {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-/* Re-invert raster media so photos/video render with natural colors. */
-.theme-invert img,
-.theme-invert video {
-  filter: invert(1) hue-rotate(180deg);
 }
 
 ::-webkit-scrollbar {
