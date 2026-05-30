@@ -15,9 +15,9 @@ function ToastCloseButton({ closeToast }) {
 			type="button"
 			onClick={closeToast}
 			aria-label="Dismiss notification"
-			className="ml-2 self-start p-0.5 text-white/70 transition hover:text-white"
+			className="ml-auto self-center p-0.5 text-white/80 transition hover:text-white"
 		>
-			<X className="h-4 w-4" strokeWidth={2} />
+			<X className="h-4 w-4" strokeWidth={3} />
 		</button>
 	)
 }
