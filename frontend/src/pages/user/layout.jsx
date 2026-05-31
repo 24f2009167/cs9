@@ -36,9 +36,10 @@ function UserLayout() {
     : 'U'
 
   const activeSidebarNav = (() => {
+    if (location.pathname === '/my-contributions') return ''
     if (location.pathname === '/leaderboard') return 'Leaderboard'
     if (location.pathname === '/dashboard') return sidebarNav === 'My Queries' ? 'My Queries' : 'Dashboard'
-    if (location.pathname === '/raise-query' || location.pathname.startsWith('/query/')) return 'My Queries'
+    if (location.pathname.startsWith('/query/')) return location.state?.activeSidebarNav || ''
     return ''
   })()
 
@@ -128,6 +129,7 @@ function UserLayout() {
             onTagsChange={setSelectedTags}
             onNotifOpen={handleNotifOpen}
             onNotifViewAll={handleNotifViewAll}
+            showSearch={location.pathname !== '/leaderboard'}
             showRaiseQuery={location.pathname !== '/raise-query'}
             onRaiseQuery={() => navigate('/raise-query')}
             onProfileSettings={() => navigate('/profile')}
