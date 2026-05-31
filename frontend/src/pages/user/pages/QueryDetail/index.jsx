@@ -53,6 +53,16 @@ function QueryDetailPage() {
     }
   }, [queryId])
 
+  // Silent re-fetch — updates the thread in place WITHOUT toggling `loading`,
+  // so actions like voting/commenting don't blank the page (no reload flash).
+  const refresh = useCallback(async () => {
+    try {
+      setData(await fetchQuestionDetail(queryId))
+    } catch {
+      // Keep the current view if the refresh fails.
+    }
+  }, [queryId])
+
   useEffect(() => { load() }, [load])
 
   // ── Related recent queries sharing the same tags ────────────────────────────
@@ -72,7 +82,7 @@ function QueryDetailPage() {
   async function handleVote(answerId, vote) {
     try {
       await voteAnswer(answerId, vote)
-      await load()
+      await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not register your vote.')
     }

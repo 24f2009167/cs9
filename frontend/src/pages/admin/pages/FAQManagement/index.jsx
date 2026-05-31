@@ -139,9 +139,9 @@ function FAQManagementView() {
           type="button"
           onClick={() => { setCreating(true); setCreateForm(EMPTY_FORM) }}
           aria-label="Add FAQ"
-          className="mt-1 flex shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-brand/90"
+          className="mt-1 flex shrink-0 items-center gap-1.5 rounded-lg border border-brand px-3 py-1.5 text-[10px] font-bold text-brand transition hover:bg-brand/5"
         >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
+          <Plus className="h-3 w-3" strokeWidth={2.5} />
           Add FAQ
         </button>
       </div>
