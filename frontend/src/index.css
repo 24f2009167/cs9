@@ -4,55 +4,54 @@
 /* Register class-based dark: variant (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Theme: Tailwind v4 reads CSS custom properties from @theme */
+/* Theme tokens. Light values live directly in @theme, so Tailwind generates
+   utilities like `bg-bg-card` / `text-text-primary` as `var(--color-*)`.
+   The .dark block below overrides those SAME --color-* vars, so the utilities
+   re-resolve to dark for any element inside `.dark`. (Aliasing through an
+   intermediate var would collapse once at :root and never see .dark.) */
 @theme {
-  --color-bg-primary: var(--bg-primary);
-  --color-bg-secondary: var(--bg-secondary);
-  --color-bg-tertiary: var(--bg-tertiary);
-  --color-bg-card: var(--bg-card);
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-border: var(--border);
-  --color-border-light: var(--border-light);
-  --color-brand: var(--brand);
-  --color-brand-hover: var(--brand-hover);
-  --color-hover-bg: var(--hover-bg);
+  --color-bg-primary:     #f3f4f6;
+  --color-bg-secondary:   #ffffff;
+  --color-bg-tertiary:    #edeeef;
+  --color-bg-card:        #ffffff;
+  --color-text-primary:   #191c1d;
+  --color-text-secondary: #444748;
+  --color-text-muted:     #747878;
+  --color-border:         #c4c7c7;
+  --color-border-light:   #e5e7eb;
+  --color-brand:          #8c6a40;
+  --color-brand-hover:    #7a5c35;
+  --color-hover-bg:       #edeeef;
+  --color-danger:         #dc2626;
+  --color-success:        #16a34a;
+  --color-info:           #2563eb;
+  --color-warning:        #b45309;
 
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Playfair Display", Georgia, serif;
 }
 
-/* Light theme — defaults */
-:root {
-  --bg-primary:     #f3f4f6;
-  --bg-secondary:   #ffffff;
-  --bg-tertiary:    #edeeef;
-  --bg-card:        #ffffff;
-  --text-primary:   #191c1d;
-  --text-secondary: #444748;
-  --text-muted:     #747878;
-  --border:         #c4c7c7;
-  --border-light:   #e5e7eb;
-  --brand:          #8c6a40;
-  --brand-hover:    #7a5c35;
-  --hover-bg:       #edeeef;
-}
-
-/* Dark theme — applied when .dark class is on a parent element */
+/* Dark theme — overrides the same --color-* vars the utilities read.
+   Applied via the `.dark` class on <body> and the layout wrapper.
+   ⚠ APPROVED PALETTE — locked to the signed-off dark design. Do not drift
+   these swatches without sign-off; every dark surface derives from them. */
 .dark {
-  --bg-primary:     #121418;
-  --bg-secondary:   #1a1d23;
-  --bg-tertiary:    #22262e;
-  --bg-card:        #1e2128;
-  --text-primary:   #e8eaed;
-  --text-secondary: #9aa0a6;
-  --text-muted:     #6b7280;
-  --border:         #3c4043;
-  --border-light:   #2d3139;
-  --brand:          #a0876a;
-  --brand-hover:    #8c7355;
-  --hover-bg:       #2a2e38;
+  --color-bg-primary:     #121418;
+  --color-bg-secondary:   #1a1d23;
+  --color-bg-tertiary:    #22262e;
+  --color-bg-card:        #1e2128;
+  --color-text-primary:   #e8eaed;
+  --color-text-secondary: #9aa0a6;
+  --color-text-muted:     #6b7280;
+  --color-border:         #3c4043;
+  --color-border-light:   #2d3139;
+  --color-brand:          #a0876a;
+  --color-brand-hover:    #8c7355;
+  --color-hover-bg:       #2a2e38;
+  --color-danger:         #f87171;
+  --color-success:        #4ade80;
+  --color-info:           #60a5fa;
+  --color-warning:        #fbbf24;
 }
 
 * {
@@ -66,8 +65,8 @@ html {
 body {
   margin: 0;
   min-height: 100svh;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   font-family: "Inter", system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;

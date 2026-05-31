@@ -47,10 +47,10 @@ function LoginModal({ isOpen, onClose, onLogin }) {
     <Modal isOpen={isOpen} onClose={handleClose} position="top-right" title={isForgotPassword ? 'Reset Password' : 'Login'}>
       {isForgotPassword ? (
         <>
-          <h2 className="mb-2 font-display text-center text-[15px] font-semibold leading-snug text-black">
+          <h2 className="mb-2 font-display text-center text-[15px] font-semibold leading-snug text-text-primary">
             Reset Password
           </h2>
-          <p className="mx-auto mb-4 max-w-sm text-center text-[13px] leading-6 text-[#444748]">
+          <p className="mx-auto mb-4 max-w-sm text-center text-[13px] leading-6 text-text-secondary">
             Enter your user ID or email address and we will send password reset instructions.
           </p>
 
@@ -86,7 +86,7 @@ function LoginModal({ isOpen, onClose, onLogin }) {
       ) : (
         <>
           {error && (
-            <p className="mb-3 rounded-lg border border-[#f3c6c6] bg-[#fff5f5] px-3 py-2 text-center text-[13px] leading-6 text-[#ba1a1a]">
+            <p className="mb-3 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-center text-[13px] leading-6 text-danger">
               {error}
             </p>
           )}

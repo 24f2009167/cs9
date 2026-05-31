@@ -41,7 +41,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
 
   return (
     <div
-      className="mb-4 flex cursor-pointer rounded-xl border border-[#9ca3af] bg-white p-5 transition hover:border-[#8c6a40] hover:shadow-sm"
+      className="mb-4 flex cursor-pointer rounded-xl border border-border bg-bg-card p-5 transition hover:border-brand hover:shadow-sm"
       onClick={() => onClick?.(query.id)}
     >
       {/* Upvote */}
@@ -75,15 +75,15 @@ const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
               </span>
             ))}
           </div>
-          <span className="shrink-0 text-[12px] font-medium text-[#6b7280]">
-            <span className="text-[#191c1d]">{query.authorName}</span> · {query.meta}
+          <span className="shrink-0 text-[12px] font-medium text-text-muted">
+            <span className="text-text-primary">{query.authorName}</span> · {query.meta}
           </span>
         </div>
 
-        <h3 className="font-display mb-2 text-[18px] font-semibold text-[#191c1d]">{query.title}</h3>
-        <p className="mb-4 text-[13px] leading-6 text-[#444748]" dangerouslySetInnerHTML={{ __html: query.desc }} />
+        <h3 className="font-display mb-2 text-[18px] font-semibold text-text-primary">{query.title}</h3>
+        <p className="mb-4 text-[13px] leading-6 text-text-secondary" dangerouslySetInnerHTML={{ __html: query.desc }} />
 
-        <div className="flex items-center gap-5 text-[12px] font-medium text-[#444748]">
+        <div className="flex items-center gap-5 text-[12px] font-medium text-text-secondary">
           {/* Total replies (answer_count) */}
           <span className="flex items-center gap-1.5">
             <MessageCircle className="h-3.5 w-3.5" strokeWidth={1.8} />

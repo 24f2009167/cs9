@@ -35,6 +35,14 @@ function UserLayout() {
     ? user.name.trim().split(/\s+/).map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'U'
 
+  const activeSidebarNav = (() => {
+    if (location.pathname === '/my-contributions') return ''
+    if (location.pathname === '/leaderboard') return 'Leaderboard'
+    if (location.pathname === '/dashboard') return sidebarNav === 'My Queries' ? 'My Queries' : 'Dashboard'
+    if (location.pathname.startsWith('/query/')) return location.state?.activeSidebarNav || ''
+    return ''
+  })()
+
   useEffect(() => {
     fetchNotifications()
       .then(data => {
@@ -84,7 +92,7 @@ function UserLayout() {
 
   return (
     <div
-      className={`flex min-h-svh flex-col bg-[#f3f4f6] text-[#191c1d] ${
+      className={`flex min-h-svh flex-col bg-bg-primary text-text-primary ${
         isDark ? 'dark' : ''
       }`}
     >
@@ -93,8 +101,7 @@ function UserLayout() {
         <LeftPane
           isCollapsed={isLeftPaneCollapsed}
           onToggleCollapse={() => setIsLeftPaneCollapsed(v => !v)}
-          sidebarNav={location.pathname === '/leaderboard' ? 'Leaderboard' : sidebarNav}
-          currentView={currentView}
+          activeNav={activeSidebarNav}
           onNavigate={label => {
             if (label === 'Leaderboard') {
               navigate('/leaderboard')
@@ -122,6 +129,9 @@ function UserLayout() {
             onTagsChange={setSelectedTags}
             onNotifOpen={handleNotifOpen}
             onNotifViewAll={handleNotifViewAll}
+            showSearch={location.pathname !== '/leaderboard'}
+            showRaiseQuery={location.pathname !== '/raise-query'}
+            onRaiseQuery={() => navigate('/raise-query')}
             onProfileSettings={() => navigate('/profile')}
             onLogout={handleLogout}
           />
@@ -136,6 +146,8 @@ function UserLayout() {
               initials,
               searchQuery,
               selectedTags,
+              setSelectedTags,
+              tags,
             }}
           />
         </div>

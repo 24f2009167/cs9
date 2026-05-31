@@ -10,7 +10,7 @@ function FaqCard({ faq, sectionId, isOpen, onToggle }) {
   const answerId = `faq-answer-${sectionId}-${faq.id}`
 
   return (
-    <article className="overflow-hidden rounded-lg border border-[#c4c7c7] bg-white transition">
+    <article className="overflow-hidden rounded-lg border border-border bg-bg-card transition">
       <button
         type="button"
         className="flex min-h-14 w-full items-center justify-between gap-4 p-4 text-left"
@@ -18,12 +18,12 @@ function FaqCard({ faq, sectionId, isOpen, onToggle }) {
         aria-controls={answerId}
         onClick={onToggle}
       >
-        <span className="text-[14px] font-semibold leading-relaxed text-black">
+        <span className="text-[14px] font-semibold leading-relaxed text-text-primary">
           {getQuestionLabel(faq)}
         </span>
         <ChevronDown
           aria-hidden="true"
-          className={`h-5 w-5 shrink-0 text-[#747878] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-5 w-5 shrink-0 text-text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
           strokeWidth={1.8}
         />
       </button>
@@ -34,7 +34,7 @@ function FaqCard({ faq, sectionId, isOpen, onToggle }) {
         }`}
       >
         <div className="overflow-hidden">
-          <p className="px-4 pb-4 text-[13px] leading-6 text-[#444748]" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+          <p className="px-4 pb-4 text-[13px] leading-6 text-text-secondary" dangerouslySetInnerHTML={{ __html: faq.answer }} />
         </div>
       </div>
     </article>
