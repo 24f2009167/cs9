@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { Link as LinkIcon } from 'lucide-react'
 import QuestionCard from '../../components/QuestionCard/QuestionCard'
+import FAQCategories from '../../components/FAQCategories/FAQCategories'
 import Button from '../../../../components/Button/Button'
 import { fetchQuestions, fetchQuestionTags, fetchUserContributions, voteQuestion, normalizeQuestion } from '../../service'
 import { queryClient } from '../../../../lib/queryClient'
@@ -10,7 +11,7 @@ import { notifyError } from '../../../../lib/notify'
 function DashboardPage() {
   const navigate = useNavigate()
   // searchQuery and selectedTags live in UserLayout, passed via context
-  const { user, sidebarNav, searchQuery, selectedTags, setSelectedTags } = useOutletContext()
+  const { user, sidebarNav, searchQuery, selectedTags, setSelectedTags, tags } = useOutletContext()
 
   const [queries, setQueries]                 = useState([])
   const [loadingQueries, setLoadingQueries]   = useState(true)
@@ -20,6 +21,14 @@ function DashboardPage() {
 
   function handleCardClick(id) {
     navigate(`/query/${id}`)
+  }
+
+  // Top FAQ Categories filter — shares selectedTags with the header tag popover.
+  function toggleCategory(tag) {
+    setSelectedTags?.(prev => (prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]))
+  }
+  function clearCategories() {
+    setSelectedTags?.([])
   }
 
   // ── Load contributions ──────────────────────────────────────────────────────
@@ -107,12 +116,12 @@ function DashboardPage() {
       {/* ── Left column ────────────────────────────────────────────── */}
       <div className="min-w-0 flex-1">
         {sidebarNav === 'My Queries' && (
-          <h2 className="font-display mb-6 text-[18px] font-semibold text-[#191c1d]">My Queries</h2>
+          <h2 className="font-display mb-6 text-[18px] font-semibold text-text-primary">My Queries</h2>
         )}
 
         {/* Tabs — hidden in My Queries */}
         {sidebarNav !== 'My Queries' && (
-          <div className="mb-6 flex items-center border-b border-[#c4c7c7] pb-4">
+          <div className="mb-6 flex items-center border-b border-border pb-4">
             <div className="flex gap-7">
               {['All Queries', 'Trending', 'Recent', 'Unanswered', 'Resolved'].map(tab => (
                 <button
@@ -121,14 +130,14 @@ function DashboardPage() {
                   onClick={() => setActiveTab(tab)}
                   className={`mb-[-17px] flex items-center gap-1.5 pb-4 text-[13px] font-semibold transition ${
                     activeTab === tab
-                      ? 'border-b-2 border-[#8c6a40] text-[#8c6a40]'
-                      : 'text-[#6b7280] hover:text-[#374151]'
+                      ? 'border-b-2 border-brand text-brand'
+                      : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
                   {tab}
                   {tabCounts[tab] > 0 && (
                     <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      activeTab === tab ? 'bg-[#8c6a40]/15 text-[#8c6a40]' : 'bg-[#e5e7eb] text-[#6b7280]'
+                      activeTab === tab ? 'bg-brand/15 text-brand' : 'bg-bg-tertiary text-text-muted'
                     }`}>
                       {tabCounts[tab]}
                     </span>
@@ -141,15 +150,15 @@ function DashboardPage() {
 
         {/* Loading */}
         {loadingQueries && (
-          <div className="flex items-center gap-2 py-8 text-[13px] text-[#747878]">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#c4c7c7] border-t-[#8c6a40]" />
+          <div className="flex items-center gap-2 py-8 text-[13px] text-text-muted">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-[#8c6a40]" />
             Searching…
           </div>
         )}
 
         {/* Empty */}
         {!loadingQueries && filtered.length === 0 && (
-          <p className="mt-5 text-[13px] text-[#747878]">
+          <p className="mt-5 text-[13px] text-text-muted">
             {searchQuery || selectedTags.length > 0
               ? `No results found${searchQuery ? ` for "${searchQuery}"` : ''}${selectedTags.length ? ` in ${selectedTags.join(', ')}` : ''}`
               : 'No queries yet. Ask your first question!'}
@@ -170,26 +179,34 @@ function DashboardPage() {
       {/* ── Right column ─────────────────────────────────────────── */}
       <div className="flex w-[300px] shrink-0 flex-col gap-6">
 
+        {/* Top FAQ Categories — filters the query list (synced with header tags) */}
+        <FAQCategories
+          categories={tags || []}
+          selected={selectedTags}
+          onToggle={toggleCategory}
+          onClear={clearCategories}
+        />
+
         {/* Your Contribution */}
-        <div className="rounded-xl border border-[#c4c7c7] bg-white p-6">
+        <div className="rounded-xl border border-border bg-bg-card p-6">
           <div className="mb-6 flex items-center gap-3">
-            <div className="rounded-md bg-[#8c6a40] p-1.5 text-white">
+            <div className="rounded-md bg-brand p-1.5 text-white">
               <LinkIcon className="h-5 w-5" strokeWidth={1.8} />
             </div>
-            <span className="font-display text-[16px] font-semibold text-[#191c1d]">Your Contribution</span>
+            <span className="font-display text-[16px] font-semibold text-text-primary">Your Contribution</span>
           </div>
 
           {loadingContributions ? (
-            <div className="flex items-center gap-2 py-4 text-[13px] text-[#747878]">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#c4c7c7] border-t-[#8c6a40]" />
+            <div className="flex items-center gap-2 py-4 text-[13px] text-text-muted">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-[#8c6a40]" />
               Loading…
             </div>
           ) : contributions.length === 0 ? (
-            <p className="py-4 text-[13px] text-[#9ca3af]">No contributions yet.</p>
+            <p className="py-4 text-[13px] text-text-muted">No contributions yet.</p>
           ) : (
             <>
               <div className="relative pl-5">
-                <div className="absolute bottom-2.5 left-1 top-2.5 w-px bg-[#d1d5db]" />
+                <div className="absolute bottom-2.5 left-1 top-2.5 w-px bg-bg-tertiary" />
                 {[...contributions].sort((a, b) => new Date(b.time) - new Date(a.time)).map((item, i) => {
                   const color =
                     item.type === 'question' ? '#8c6a40'
@@ -210,7 +227,7 @@ function DashboardPage() {
                         style={{ background: color }}
                       />
                       <h5
-                        className="text-[13px] font-medium text-[#191c1d]"
+                        className="text-[13px] font-medium text-text-primary"
                         style={{
                           display: '-webkit-box',
                           WebkitLineClamp: 1,
@@ -222,7 +239,7 @@ function DashboardPage() {
                       >
                         {label}
                       </h5>
-                      <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-[#747878]">
+                      <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-text-muted">
                         {new Date(item.time).toLocaleDateString('en-IN', {
                           day: '2-digit',
                           month: 'short',

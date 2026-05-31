@@ -1,41 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MessageSquare, CheckCircle2, Clock, HelpCircle, ChevronUp } from 'lucide-react'
-import QuestionCard from '../../components/QuestionCard/QuestionCard'
-import { fetchMyContributions, fetchQuestions, normalizeQuestion } from '../../service'
+import { MessageSquare, CheckCircle2, Clock, HelpCircle, ChevronUp, Award } from 'lucide-react'
+import { fetchMyContributions } from '../../service'
 import { notifyError } from '../../../../lib/notify'
 import useAuthStore from '../../../../store/useAuthStore'
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-
+// Per-type visual identity (semantic accent colors, readable on both themes).
 const TYPE_META = {
-  question: { icon: HelpCircle,   label: 'Question', color: '#8c6a40' },
-  answer:   { icon: CheckCircle2, label: 'Answer',  color: '#16a34a' },
-  comment:  { icon: MessageSquare, label: 'Comment', color: '#2563eb' },
+  question: { icon: HelpCircle,    label: 'Question', color: '#8c6a40' },
+  answer:   { icon: CheckCircle2,  label: 'Answer',   color: '#16a34a' },
+  comment:  { icon: MessageSquare, label: 'Comment',  color: '#2563eb' },
 }
 
-// ─── Component ─────────────────────────────────────────────────────────────
+const TABS = [
+  { key: 'all',       label: 'All' },
+  { key: 'questions', label: 'Questions' },
+  { key: 'answers',   label: 'Answers' },
+  { key: 'comments',  label: 'Comments' },
+]
 
 function MyContributionsPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
   const [contributions, setContributions] = useState([])
-  const [normalizedQuestions, setNormalizedQuestions] = useState([])
-  const [activeTab, setActiveTab] = useState('all') // 'all' | 'questions' | 'answers' | 'comments'
-  const [loading, setLoading] = useState(true)
-  const [loadingDetail, setLoadingDetail] = useState(false)
-  const [selectedId, setSelectedId] = useState(null)
-  const [detail, setDetail] = useState(null)
+  const [activeTab, setActiveTab]         = useState('all')
+  const [loading, setLoading]             = useState(true)
 
-  const tabs = [
-    { key: 'all',      label: 'All' },
-    { key: 'questions', label: 'Questions' },
-    { key: 'answers',  label: 'Answers' },
-    { key: 'comments', label: 'Comments' },
-  ]
-
-  // Load all contributions on mount
   useEffect(() => {
     if (!user?.userId) return
     setLoading(true)
@@ -45,18 +36,20 @@ function MyContributionsPage() {
       .finally(() => setLoading(false))
   }, [user?.userId])
 
-  // When a question-type contribution is clicked, fetch its full detail
-  useEffect(() => {
-    if (!selectedId) return
-    setLoadingDetail(true)
-    fetchQuestions({ questionId: selectedId })
-      .then(data => {
-        const q = Array.isArray(data.questions) ? data.questions[0] : data
-        setDetail(q ? normalizeQuestion(q, user?.userId) : null)
-      })
-      .catch(() => setDetail(null))
-      .finally(() => setLoadingDetail(false))
-  }, [selectedId, user?.userId])
+  // ── Derived stats + filtered list ────────────────────────────────────────
+  const stats = useMemo(() => ({
+    question: contributions.filter(c => c.type === 'question').length,
+    answer:   contributions.filter(c => c.type === 'answer').length,
+    comment:  contributions.filter(c => c.type === 'comment').length,
+    accepted: contributions.filter(c => c.type === 'answer' && c.isAccepted).length,
+  }), [contributions])
+
+  const STAT_CARDS = [
+    { label: 'Questions', value: stats.question, Icon: HelpCircle,    color: '#8c6a40' },
+    { label: 'Answers',   value: stats.answer,   Icon: CheckCircle2,  color: '#16a34a' },
+    { label: 'Comments',  value: stats.comment,  Icon: MessageSquare, color: '#2563eb' },
+    { label: 'Accepted',  value: stats.accepted, Icon: Award,         color: '#b45309' },
+  ]
 
   const filtered = contributions.filter(c => {
     if (activeTab === 'all')       return true
@@ -66,171 +59,177 @@ function MyContributionsPage() {
     return true
   })
 
-  function handleCardClick(id) {
-    setSelectedId(id)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  // Always open the canonical query detail page.
+  function openContribution(item) {
+    const qid = item.type === 'question' ? item.id : item.questionId
+    if (qid) navigate(`/query/${qid}`)
   }
 
-  function handleBack() {
-    setSelectedId(null)
-    setDetail(null)
-  }
-
-  // ── Detail view ──────────────────────────────────────────────────────────
-  if (selectedId && detail) {
-    return (
-      <div className="mx-auto w-full max-w-[900px] px-8 py-6">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="mb-5 flex items-center gap-2 text-[13px] font-medium text-[#8c6a40] transition hover:text-[#6b5230]"
-        >
-          ← Back to all contributions
-        </button>
-        <QuestionCard
-          query={detail}
-          onUpvote={() => {}}
-          onClick={() => {}}
-        />
-      </div>
-    )
-  }
-
-  // ── Loading ─────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#c4c7c7] border-t-[#8c6a40]" />
+      <div className="flex flex-1 items-center justify-center py-24">
+        <span className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-brand" />
       </div>
     )
   }
 
-  // ── Empty state ─────────────────────────────────────────────────────────
-  if (contributions.length === 0) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-20 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#edeeef]">
-          <MessageSquare className="h-7 w-7 text-[#9ca3af]" strokeWidth={1.5} />
-        </div>
-        <h3 className="mb-2 font-display text-[20px] font-bold text-[#191c1d]">No contributions yet</h3>
-        <p className="mb-6 text-[13px] text-[#6b7280]">
-          Raise a query or answer a question to see your activity here.
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate('/raise-query')}
-          className="rounded-lg bg-[#0b1528] px-6 py-2.5 text-[13px] font-semibold text-white transition hover:bg-[#1e293b]"
-        >
-          Raise a Query
-        </button>
-      </div>
-    )
-  }
-
-  // ── List view ────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto w-full max-w-[900px] px-8 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-display text-[22px] font-bold text-[#191c1d]">My Contributions</h2>
-        <span className="text-[12px] text-[#9ca3af]">{contributions.length} total</span>
+    <div className="mx-auto w-full max-w-[900px] px-8 py-8">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="font-display text-[22px] font-bold text-text-primary">My Contributions</h2>
+        <p className="mt-1 text-[13px] text-text-muted">
+          Everything you’ve asked, answered, and commented on across the hub.
+        </p>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-[#edeeef] p-1">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 rounded-lg px-4 py-2 text-[13px] font-semibold transition ${
-              activeTab === tab.key
-                ? 'bg-white text-[#191c1d] shadow-sm'
-                : 'text-[#6b7280] hover:text-[#191c1d]'
-            }`}
-          >
-            {tab.label}
-          </button>
+      {/* Summary stats */}
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {STAT_CARDS.map(({ label, value, Icon, color }) => (
+          <div key={label} className="rounded-xl border border-border-light bg-bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                style={{ background: `${color}1f`, color }}
+              >
+                <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[20px] font-bold leading-none text-text-primary">{value}</p>
+                <p className="mt-1 text-[11px] font-medium text-text-muted">{label}</p>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* List */}
-      <div className="flex flex-col gap-3">
-        {filtered.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-[#9ca3af]">
-            No {activeTab} to show.
+      {/* Empty state */}
+      {contributions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-bg-tertiary">
+            <MessageSquare className="h-7 w-7 text-text-muted" strokeWidth={1.5} />
+          </div>
+          <h3 className="mb-2 font-display text-[18px] font-bold text-text-primary">No contributions yet</h3>
+          <p className="mb-6 max-w-xs text-[13px] text-text-muted">
+            Raise a query or answer a question to start building your activity history.
           </p>
-        ) : (
-          filtered.map(item => {
-            const { icon: Icon, label, color } = TYPE_META[item.type] ?? TYPE_META.question
-            return (
-              <div
-                key={`${item.type}-${item.id}`}
-                className="flex cursor-pointer items-start gap-4 rounded-xl border border-[#e5e7eb] bg-white p-5 transition hover:border-[#8c6a40] hover:shadow-sm"
-                onClick={() => item.type === 'question' && handleCardClick(item.id)}
-              >
-                {/* Type badge */}
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                  style={{ background: `${color}15`, color }}
+          <button
+            type="button"
+            onClick={() => navigate('/raise-query')}
+            className="rounded-lg bg-brand px-6 py-2.5 text-[13px] font-semibold text-white transition hover:bg-brand-hover"
+          >
+            Raise a Query
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Tabs */}
+          <div className="mb-6 flex gap-1 rounded-xl bg-bg-tertiary p-1">
+            {TABS.map(tab => {
+              const count =
+                tab.key === 'all' ? contributions.length
+                : tab.key === 'questions' ? stats.question
+                : tab.key === 'answers' ? stats.answer
+                : stats.comment
+              const isActive = activeTab === tab.key
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold transition ${
+                    isActive
+                      ? 'bg-bg-card text-text-primary shadow-sm'
+                      : 'text-text-muted hover:text-text-primary'
+                  }`}
                 >
-                  <Icon className="h-5 w-5" strokeWidth={1.8} />
-                </div>
+                  {tab.label}
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                    isActive ? 'bg-brand/15 text-brand' : 'bg-bg-primary text-text-muted'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
 
-                {/* Body */}
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span
-                      className="rounded px-2 py-0.5 text-[10px] font-semibold uppercase"
-                      style={{ background: `${color}15`, color }}
+          {/* List */}
+          <div className="flex flex-col gap-3">
+            {filtered.length === 0 ? (
+              <p className="py-10 text-center text-[13px] text-text-muted">
+                No {activeTab} to show.
+              </p>
+            ) : (
+              filtered.map(item => {
+                const { icon: Icon, label, color } = TYPE_META[item.type] ?? TYPE_META.question
+                return (
+                  <div
+                    key={`${item.type}-${item.id}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openContribution(item)}
+                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && openContribution(item)}
+                    className="flex cursor-pointer items-start gap-4 rounded-xl border border-border-light bg-bg-card p-5 transition hover:border-brand hover:shadow-sm"
+                  >
+                    {/* Type badge */}
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                      style={{ background: `${color}1f`, color }}
                     >
-                      {label}
-                    </span>
-                    {item.type === 'answer' && item.isAccepted && (
-                      <span className="flex items-center gap-1 rounded bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#16a34a]">
-                        <CheckCircle2 className="h-3 w-3" strokeWidth={2} /> Accepted
-                      </span>
-                    )}
-                    {item.type === 'question' && (
-                      <span className="flex items-center gap-1 text-[11px] text-[#9ca3af]">
-                        <Clock className="h-3 w-3" strokeWidth={1.8} />
-                        {new Date(item.time).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                    )}
+                      <Icon className="h-5 w-5" strokeWidth={1.8} />
+                    </div>
+
+                    {/* Body */}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span
+                          className="rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                          style={{ background: `${color}1f`, color }}
+                        >
+                          {label}
+                        </span>
+                        {item.type === 'answer' && item.isAccepted && (
+                          <span className="flex items-center gap-1 rounded bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+                            <CheckCircle2 className="h-3 w-3" strokeWidth={2} /> Accepted
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 text-[11px] text-text-muted">
+                          <Clock className="h-3 w-3" strokeWidth={1.8} />
+                          {new Date(item.time).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      {item.type === 'question' && item.title && (
+                        <h4 className="mb-1 text-[15px] font-semibold text-text-primary">{item.title}</h4>
+                      )}
+
+                      <p
+                        className="line-clamp-2 text-[13px] leading-5 text-text-muted"
+                        dangerouslySetInnerHTML={{ __html: item.body || '' }}
+                      />
+
+                      {/* Footer meta */}
+                      <div className="mt-2 flex items-center gap-4 text-[11px] text-text-muted">
+                        {item.score > 0 && (
+                          <span className="flex items-center gap-1 font-medium">
+                            <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} />
+                            {item.score} {item.score === 1 ? 'vote' : 'votes'}
+                          </span>
+                        )}
+                        {item.type !== 'question' && (
+                          <span className="text-brand">View thread →</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-
-                  {item.type === 'question' ? (
-                    <h4 className="mb-1 text-[15px] font-semibold text-[#191c1d]">{item.title}</h4>
-                  ) : null}
-
-                  <p
-                    className="line-clamp-2 text-[13px] leading-5 text-[#6b7280]"
-                    dangerouslySetInnerHTML={{ __html: item.body || '' }}
-                  />
-
-                  {/* Footer meta */}
-                  <div className="mt-2 flex items-center gap-4 text-[11px] text-[#9ca3af]">
-                    {item.score > 0 && (
-                      <span className="flex items-center gap-1">
-                        <ChevronUp className="h-3 w-3" strokeWidth={2} />
-                        {item.score}
-                      </span>
-                    )}
-                    {item.type === 'answer' && item.questionId && (
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); handleCardClick(item.questionId) }}
-                        className="text-[#8c6a40] underline-offset-2 transition hover:underline"
-                      >
-                        View question →
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
+                )
+              })
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -84,7 +84,7 @@ function UserLayout() {
 
   return (
     <div
-      className={`flex min-h-svh flex-col bg-[#f3f4f6] text-[#191c1d] ${
+      className={`flex min-h-svh flex-col bg-bg-primary text-text-primary ${
         isDark ? 'dark' : ''
       }`}
     >
@@ -122,6 +122,8 @@ function UserLayout() {
             onTagsChange={setSelectedTags}
             onNotifOpen={handleNotifOpen}
             onNotifViewAll={handleNotifViewAll}
+            showRaiseQuery={location.pathname !== '/raise-query'}
+            onRaiseQuery={() => navigate('/raise-query')}
             onProfileSettings={() => navigate('/profile')}
             onLogout={handleLogout}
           />
@@ -136,6 +138,8 @@ function UserLayout() {
               initials,
               searchQuery,
               selectedTags,
+              setSelectedTags,
+              tags,
             }}
           />
         </div>

@@ -46,7 +46,7 @@ const ReportModal: FC<ReportModalProps> = ({ open, onClose, onSubmit, submitting
         value={details}
         onChange={e => setDetails(e.target.value)}
         placeholder="Additional details (optional)…"
-        className="mb-6 h-20 w-full resize-none rounded-lg border border-[#d1d5db] bg-white p-3 text-[13px] text-[#191c1d] outline-none transition placeholder:text-[#9da1a1] focus:border-[#8c6a40] focus:ring-1 focus:ring-[#8c6a40]/15"
+        className="mb-6 h-20 w-full resize-none rounded-lg border border-border bg-bg-card p-3 text-[13px] text-text-primary outline-none transition placeholder:text-text-muted focus:border-brand focus:ring-1 focus:ring-brand/15"
       />
 
       {/* Actions */}

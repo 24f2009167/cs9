@@ -5,9 +5,10 @@ import { persist } from 'zustand/middleware'
  * Dark-mode preference, persisted to localStorage (key `rogare-theme`) so it
  * survives a page refresh and is shared between the user and admin panels.
  *
- * The "dark theme" is a CSS invert filter applied via the `.theme-invert`
- * class (see index.css) — toggled on the layout wrapper, and on portaled
- * modal panels that render outside that wrapper.
+ * Dark mode is driven by a `.dark` class (toggled on <body> and the layout
+ * wrapper). That class swaps the semantic CSS-variable tokens defined in
+ * index.css (--bg-*, --text-*, --border, --brand, accents), which every
+ * component consumes via Tailwind utilities like `bg-bg-card` / `text-text-primary`.
  */
 const useThemeStore = create(
   persist(

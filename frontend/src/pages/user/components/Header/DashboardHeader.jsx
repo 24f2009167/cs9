@@ -61,43 +61,43 @@ function DashboardHeader({
   const activeCount = localTags.length
 
   return (
-    <header className="relative flex items-center justify-between border-b border-[#c4c7c7] dark:border-[#3c4043] bg-white dark:bg-[#1a1d23] px-8 py-4">
+    <header className="relative flex items-center justify-between border-b border-border bg-[#f8f9fa] px-8 py-4 dark:bg-bg-card">
 
       {/* Search bar */}
-      <div className="relative flex w-[420px] items-center gap-2 rounded-lg bg-[#edeeef] dark:bg-[#22262e] px-3 py-2 transition hover:bg-[#e5e6e7] dark:hover:bg-[#2a2e38]">
-        <Search className="h-4 w-4 shrink-0 text-[#747878] dark:text-[#6b7280]" strokeWidth={1.8} />
+      <div className="relative flex w-[420px] items-center gap-2 rounded-lg bg-bg-tertiary px-3 py-2 transition hover:bg-bg-tertiary">
+        <Search className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.8} />
 
         <input
           type="text"
           placeholder="Search FAQs, categories, or status…"
-          className="flex-1 bg-transparent text-[12px] text-[#191c1d] dark:text-[#e8eaed] placeholder-[#747878] dark:placeholder-[#6b7280] outline-none"
+          className="flex-1 bg-transparent text-[12px] text-text-primary placeholder-[#747878] outline-none"
           onChange={e => onSearchOpen?.(e.target.value)}
           onFocus={() => onSearchOpen?.('')}
         />
 
-        <span className="h-4 w-px bg-[#c4c7c7] dark:bg-[#3c4043]" />
+        <span className="h-4 w-px bg-border" />
 
         {/* Filter — tag popover */}
         <Popover>
-          <PopoverButton className="relative flex shrink-0 items-center gap-1 text-[#9ca3af] dark:text-[#6b7280] transition hover:text-[#191c1d] dark:hover:text-[#e8eaed]">
+          <PopoverButton className="relative flex shrink-0 items-center gap-1 text-text-muted transition hover:text-text-primary">
             <SlidersHorizontal className="h-4 w-4" strokeWidth={1.8} />
             {activeCount > 0 && (
-              <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#8c6a40] dark:bg-[#a0876a] text-[9px] font-bold text-white">
+              <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-white">
                 {activeCount}
               </span>
             )}
           </PopoverButton>
 
           <div className="absolute left-0 top-full z-50 w-[280px]">
-            <PopoverPanel className="mt-1 overflow-hidden rounded-xl border border-[#e5e7eb] dark:border-[#3c4043] bg-white/95 dark:bg-[#1a1d23]/95 shadow-xl backdrop-blur-sm focus:outline-none">
+            <PopoverPanel className="mt-1 overflow-hidden rounded-xl border border-border-light bg-bg-card/95 shadow-xl backdrop-blur-sm focus:outline-none">
               {/* Header row */}
-              <div className="flex items-center justify-between border-b border-[#f3f4f6] dark:border-[#2d3139] px-4 py-2.5">
+              <div className="flex items-center justify-between border-b border-border-light px-4 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#6b7280] dark:text-[#9aa0a6]">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">
                     Categories
                   </span>
                   {activeCount > 0 && (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#8c6a40]/12 dark:bg-[#a0876a]/20 text-[10px] font-semibold text-[#8c6a40] dark:text-[#a0876a]">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand/12 text-[10px] font-semibold text-brand">
                       {activeCount}
                     </span>
                   )}
@@ -106,7 +106,7 @@ function DashboardHeader({
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="text-[11px] font-medium text-[#8c6a40] dark:text-[#a0876a] underline-offset-2 transition hover:underline"
+                    className="text-[11px] font-medium text-brand underline-offset-2 transition hover:underline"
                   >
                     Clear
                   </button>
@@ -116,7 +116,7 @@ function DashboardHeader({
               {/* Tag list */}
               <div className="flex flex-wrap gap-2 p-3">
                 {tags.length === 0 ? (
-                  <p className="py-2 text-[12px] text-[#9ca3af] dark:text-[#6b7280]">No categories yet.</p>
+                  <p className="py-2 text-[12px] text-text-muted">No categories yet.</p>
                 ) : (
                   tags.map(({ tag, count }) => {
                     const { color, bg } = styleForTag(tag)
@@ -128,8 +128,8 @@ function DashboardHeader({
                         onClick={() => toggleTag(tag)}
                         className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-[12px] font-medium transition hover:-translate-y-0.5 hover:shadow-sm ${
                           isSelected
-                            ? 'border-[#8c6a40] dark:border-[#a0876a] bg-[#8c6a40]/5 dark:bg-[#a0876a]/10 text-[#8c6a40] dark:text-[#a0876a]'
-                            : 'border-[#e5e7eb] dark:border-[#3c4043] text-[#444748] dark:text-[#9aa0a6] hover:border-[#8c6a40] dark:hover:border-[#a0876a] hover:text-[#8c6a40] dark:hover:text-[#a0876a]'
+                            ? 'border-brand bg-brand/5 text-brand'
+                            : 'border-border-light text-text-secondary hover:border-brand hover:text-brand'
                         }`}
                       >
                         <span
@@ -140,7 +140,7 @@ function DashboardHeader({
                         </span>
                         {tag}
                         {count != null && (
-                          <span className={`text-[10px] ${isSelected ? 'text-[#8c6a40]/70 dark:text-[#a0876a]/70' : 'text-[#9ca3af] dark:text-[#6b7280]'}`}>
+                          <span className={`text-[10px] ${isSelected ? 'text-brand/70' : 'text-text-muted'}`}>
                             {count}
                           </span>
                         )}
@@ -159,7 +159,7 @@ function DashboardHeader({
         {showRaiseQuery && (
           <Button
             variant="secondary"
-            className="gap-1.5 rounded-lg border-transparent bg-[#8c6a40]/80 dark:bg-[#a0876a]/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-[#7a5c35] dark:hover:bg-[#8c7355]"
+            className="gap-1.5 rounded-lg border-transparent bg-brand/80 px-3 py-1.5 text-[8px] font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-brand-hover"
             onClick={onRaiseQuery}
           >
             <PlusCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Raise New Query
@@ -170,7 +170,7 @@ function DashboardHeader({
         <Popover className="relative">
           <PopoverButton
             onClick={() => onNotifOpen?.()}
-            className="relative p-1 text-[#444748] dark:text-[#9aa0a6] transition hover:text-black dark:hover:text-white focus:outline-none"
+            className="relative p-1 text-text-secondary transition hover:text-text-primary focus:outline-none"
           >
             <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
             {unreadCount > 0 && (
@@ -178,20 +178,20 @@ function DashboardHeader({
             )}
           </PopoverButton>
 
-          <PopoverPanel className="absolute right-0 top-9 z-50 w-80 overflow-hidden rounded-lg border border-[#c4c7c7] dark:border-[#3c4043] bg-white dark:bg-[#1a1d23] shadow-lg focus:outline-none">
-            <p className="border-b border-[#c4c7c7] dark:border-[#3c4043] px-4 py-3 text-[13px] font-semibold text-[#191c1d] dark:text-[#e8eaed]">
+          <PopoverPanel className="absolute right-0 top-9 z-50 w-80 overflow-hidden rounded-lg border border-border bg-bg-card shadow-lg focus:outline-none">
+            <p className="border-b border-border px-4 py-3 text-[13px] font-semibold text-text-primary">
               Notifications
             </p>
             {notifications.length === 0 ? (
-              <p className="px-4 py-5 text-center text-[12px] text-[#747878] dark:text-[#6b7280]">No notifications yet</p>
+              <p className="px-4 py-5 text-center text-[12px] text-text-muted">No notifications yet</p>
             ) : (
               notifications.slice(0, 3).map(n => (
                 <div
                   key={n.notification_id || n.id}
-                  className={`border-b border-[#f3f4f6] dark:border-[#2d3139] px-4 py-3 ${n.is_read ? 'bg-white dark:bg-[#1a1d23]' : 'bg-[#f0f9ff] dark:bg-[#1e2a38]'}`}
+                  className={`border-b border-border-light px-4 py-3 ${n.is_read ? 'bg-bg-card' : 'bg-info/10'}`}
                 >
-                  <p className="mb-1 text-[12px] leading-snug text-[#444748] dark:text-[#9aa0a6]">{n.body || n.title}</p>
-                  <span className="text-[10px] font-medium text-[#9ca3af] dark:text-[#6b7280]">
+                  <p className="mb-1 text-[12px] leading-snug text-text-secondary">{n.body || n.title}</p>
+                  <span className="text-[10px] font-medium text-text-muted">
                     {n.created_at ? timeAgo(n.created_at) : ''}
                   </span>
                 </div>
@@ -200,7 +200,7 @@ function DashboardHeader({
             <button
               type="button"
               onClick={onNotifViewAll}
-              className="w-full cursor-pointer bg-[#f8f9fa] dark:bg-[#22262e] py-2.5 text-center text-[11px] font-semibold text-[#8c6a40] dark:text-[#a0876a] transition hover:bg-[#edeeef] dark:hover:bg-[#2a2e38]"
+              className="w-full cursor-pointer bg-bg-tertiary py-2.5 text-center text-[11px] font-semibold text-brand transition hover:bg-bg-tertiary"
             >
               View All
             </button>
@@ -210,7 +210,7 @@ function DashboardHeader({
         {/* Dark mode toggle */}
         <button
           type="button"
-          className="p-1 text-[#444748] dark:text-[#9aa0a6] transition hover:text-black dark:hover:text-white"
+          className="p-1 text-text-secondary transition hover:text-text-primary"
           onClick={() => onDarkToggle()}
         >
           {isDark
@@ -219,35 +219,35 @@ function DashboardHeader({
         </button>
 
         {/* Divider */}
-        <span className="h-8 w-px bg-[#c4c7c7] dark:bg-[#3c4043]" />
+        <span className="h-8 w-px bg-border" />
 
         {/* User menu */}
         <Menu as="div" className="relative">
           <MenuButton className="flex items-center gap-3 focus:outline-none">
             <div className="text-right leading-tight">
-              <p className="text-[13px] font-medium capitalize text-[#191c1d] dark:text-[#e8eaed]">{user?.name || 'Student'}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#747878] dark:text-[#6b7280]">{user?.role || 'USER'}</p>
+              <p className="text-[13px] font-medium capitalize text-text-primary">{user?.name || 'Student'}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">{user?.role || 'USER'}</p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#8c6a40] dark:bg-[#a0876a] text-[12px] font-bold text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-[12px] font-bold text-white">
               {initials}
             </div>
           </MenuButton>
 
-          <MenuItems className="absolute right-0 top-12 z-50 min-w-[160px] overflow-hidden rounded-lg border border-[#c4c7c7] dark:border-[#3c4043] bg-white dark:bg-[#1a1d23] shadow-lg focus:outline-none">
+          <MenuItems className="absolute right-0 top-12 z-50 min-w-[160px] overflow-hidden rounded-lg border border-border bg-bg-card shadow-lg focus:outline-none">
             <MenuItem>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-[#444748] dark:text-[#9aa0a6] transition data-focus:bg-[#f8f9fa] dark:data-focus:bg-[#22262e]"
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-text-secondary transition data-focus:bg-bg-tertiary"
                 onClick={onProfileSettings}
               >
                 <Settings className="h-3.5 w-3.5" strokeWidth={1.8} /> <span className="text-[13px] font-medium capitalize">Profile Settings</span>
               </button>
             </MenuItem>
-            <div className="h-px bg-[#c4c7c7] dark:bg-[#3c4043]" />
+            <div className="h-px bg-border" />
             <MenuItem>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-red-600 transition data-focus:bg-[#f8f9fa] dark:data-focus:bg-[#22262e]"
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium text-red-600 transition data-focus:bg-bg-tertiary"
                 onClick={onLogout}
               >
                 <LogOut className="h-3.5 w-3.5" strokeWidth={1.8} /> <span className="text-[13px] font-medium">Logout</span>

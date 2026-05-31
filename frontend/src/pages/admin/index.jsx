@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../store/useAuthStore'
 import useThemeStore from '../../store/useThemeStore'
@@ -23,6 +23,12 @@ function AdminHome() {
   const { user, clearUser } = useAuthStore()
   const isDark = useThemeStore(s => s.isDark)
   const toggleDark = useThemeStore(s => s.toggleDark)
+
+  // Sync .dark on <body> so the token CSS variables also reach portaled content
+  useLayoutEffect(() => {
+    document.body.classList[isDark ? 'add' : 'remove']('dark')
+  }, [isDark])
+
   const [currentAdminView, setCurrentAdminView] = useState('dashboard')
   const [dashboardData, setDashboardData] = useState(null)
   const [isDashboardLoading, setIsDashboardLoading] = useState(true)
@@ -138,8 +144,8 @@ function AdminHome() {
 
   return (
     <div
-      className={`flex min-h-svh bg-[#f3f4f6] text-[#111827] ${
-        isDark ? 'theme-invert' : ''
+      className={`flex min-h-svh bg-bg-primary text-text-primary ${
+        isDark ? 'dark' : ''
       }`}
     >
       <AdminLeftPane currentView={currentAdminView} onNavigate={setCurrentAdminView} />
@@ -163,7 +169,7 @@ function AdminHome() {
 
         {currentAdminView === 'dashboard' && (
           <Suspense
-            fallback={<div className="flex-1 p-8 text-[13px] text-[#747878]">Loading dashboard…</div>}
+            fallback={<div className="flex-1 p-8 text-[13px] text-text-muted">Loading dashboard…</div>}
           >
             <DashboardView {...viewProps} />
           </Suspense>

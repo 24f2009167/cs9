@@ -52,21 +52,21 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
         value={value}
         onChange={e => setValue(e.target.value)}
         placeholder="Write a reply…"
-        className="min-h-[44px] w-full resize-y rounded-lg border border-[#e5e7eb] p-2.5 text-[12px] leading-5 text-[#191c1d] outline-none transition focus:border-[#8c6a40] focus:ring-2 focus:ring-[#8c6a40]/15"
+        className="min-h-[44px] w-full resize-y rounded-lg border border-border-light p-2.5 text-[12px] leading-5 text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
       />
       <div className="flex flex-col gap-1.5">
         <button
           type="button"
           onClick={() => submit(parentId)}
           disabled={busy}
-          className="rounded-md bg-[#8c6a40] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#7a5c35] disabled:opacity-60"
+          className="rounded-md bg-brand px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60"
         >
           {busy ? '…' : 'Reply'}
         </button>
         <button
           type="button"
           onClick={() => setReplyTo(null)}
-          className="rounded-md px-3 py-1.5 text-[11px] font-medium text-[#6b7280] transition hover:text-[#191c1d]"
+          className="rounded-md px-3 py-1.5 text-[11px] font-medium text-text-muted transition hover:text-text-primary"
         >
           Cancel
         </button>
@@ -84,27 +84,27 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
 
     return (
       <div className={`flex gap-2.5 ${isReply ? 'ml-7' : ''}`}>
-        <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${hidden ? 'bg-[#9ca3af]' : 'bg-[#191c1d]'}`}>
+        <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${hidden ? 'bg-text-muted' : 'bg-[#191c1d]'}`}>
           {initialsOf(c.author_name)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-[12px] font-semibold text-[#191c1d]">
+            <span className="text-[12px] font-semibold text-text-primary">
               {c.author_name}{isSelf && ' (You)'}
             </span>
-            <span className="text-[10px] text-[#9ca3af]">{fmtDate(c.created_at)}</span>
+            <span className="text-[10px] text-text-muted">{fmtDate(c.created_at)}</span>
           </div>
           {hidden ? (
-            <p className="text-[12px] italic leading-5 text-[#9ca3af]">{tombstone}</p>
+            <p className="text-[12px] italic leading-5 text-text-muted">{tombstone}</p>
           ) : (
-            <p className="text-[12px] leading-5 text-[#4b5563]" dangerouslySetInnerHTML={{ __html: c.body }} />
+            <p className="text-[12px] leading-5 text-text-secondary" dangerouslySetInnerHTML={{ __html: c.body }} />
           )}
           {/* Only visible top-level comments can receive a (one-level) reply */}
           {!isReply && !hidden && !locked && (
             <button
               type="button"
               onClick={() => openReply(c.comment_id)}
-              className="mt-1 flex items-center gap-1 text-[11px] font-medium text-[#9ca3af] transition hover:text-[#8c6a40]"
+              className="mt-1 flex items-center gap-1 text-[11px] font-medium text-text-muted transition hover:text-brand"
             >
               <CornerDownRight className="h-3 w-3" strokeWidth={1.8} /> Reply
             </button>
@@ -116,7 +116,7 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
   }
 
   return (
-    <div className="border-t border-[#f3f4f6] bg-white px-5 py-4">
+    <div className="border-t border-border-light bg-bg-card px-5 py-4">
       {topLevel.length > 0 && (
         <div className="mb-3 flex flex-col gap-4">
           {topLevel.map(c => (
@@ -138,7 +138,7 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
           <button
             type="button"
             onClick={() => openReply('root')}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#9ca3af] transition hover:text-[#8c6a40]"
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted transition hover:text-brand"
           >
             <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
             {topLevel.length > 0 ? 'Add a comment' : 'Comment'}

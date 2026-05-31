@@ -62,25 +62,25 @@ function AdminProfileView({ user }) {
     : 'AD'
 
   const inputBase =
-    'h-11 w-full rounded-lg border border-[#d1d5db] bg-[#f9fafb] pl-10 pr-3 text-[13px] text-[#191c1d] outline-none transition placeholder:text-[#9ca3af] focus:border-[#8c6a40] focus:bg-white focus:ring-2 focus:ring-[#8c6a40]/15'
+    'h-11 w-full rounded-lg border border-border bg-bg-tertiary pl-10 pr-3 text-[13px] text-text-primary outline-none transition placeholder:text-text-muted focus:border-brand focus:bg-bg-card focus:ring-2 focus:ring-brand/15'
 
   return (
     <div className="flex-1 overflow-y-auto p-5 lg:p-8">
       <div className="mx-auto max-w-[800px]">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="font-display text-[22px] font-semibold text-[#111827]">
+          <h2 className="font-display text-[22px] font-semibold text-text-primary">
             Profile Settings
           </h2>
-          <p className="mt-1 text-[13px] text-[#747878]">
+          <p className="mt-1 text-[13px] text-text-muted">
             Manage your account preferences, security, and personal information.
           </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#e5e7eb] bg-white p-8 shadow-sm">
+        <div className="rounded-2xl border border-border-light bg-bg-card p-8 shadow-sm">
           {loading ? (
-            <div className="flex items-center gap-2 py-8 text-[13px] text-[#747878]">
+            <div className="flex items-center gap-2 py-8 text-[13px] text-text-muted">
               <Loader className="h-4 w-4 animate-spin" /> Loading profile…
             </div>
           ) : (
@@ -95,14 +95,14 @@ function AdminProfileView({ user }) {
                     type="button"
                     title="Upload new photo"
                     onClick={() => notifyError('Photo upload is not supported.')}
-                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#191c1d] text-white transition hover:scale-110 hover:bg-[#8c6a40]"
+                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#191c1d] text-white transition hover:scale-110 hover:bg-brand"
                   >
                     <Camera className="h-3.5 w-3.5" strokeWidth={1.8} />
                   </button>
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-semibold text-[#191c1d]">Profile Photo</h3>
-                  <p className="text-[12px] text-[#747878]">
+                  <h3 className="text-[15px] font-semibold text-text-primary">Profile Photo</h3>
+                  <p className="text-[12px] text-text-muted">
                     Update your dashboard avatar. Recommended size: 256×256px.
                   </p>
                 </div>
@@ -111,9 +111,9 @@ function AdminProfileView({ user }) {
               {/* Name + email */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="flex flex-col">
-                  <label className="mb-2 text-[12px] font-semibold text-[#374151]">Full Name</label>
+                  <label className="mb-2 text-[12px] font-semibold text-text-secondary">Full Name</label>
                   <div className="relative flex items-center">
-                    <User className="absolute left-3 h-4 w-4 text-[#9ca3af]" strokeWidth={1.8} />
+                    <User className="absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                     <input
                       type="text"
                       value={name}
@@ -125,40 +125,40 @@ function AdminProfileView({ user }) {
                 </div>
 
                 <div className="flex flex-col">
-                  <label className="mb-2 flex items-center justify-between text-[12px] font-semibold text-[#374151]">
+                  <label className="mb-2 flex items-center justify-between text-[12px] font-semibold text-text-secondary">
                     Email Address
-                    <span className="rounded bg-[#fee2e2] px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide text-[#dc2626]">
+                    <span className="rounded bg-danger/10 px-1.5 py-0.5 text-[9px] font-extrabold tracking-wide text-danger">
                       READ-ONLY
                     </span>
                   </label>
                   <div className="relative flex items-center">
-                    <Mail className="absolute left-3 h-4 w-4 text-[#9ca3af]" strokeWidth={1.8} />
+                    <Mail className="absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                     <input
                       type="email"
                       value={user?.email || ''}
                       disabled
-                      className="h-11 w-full cursor-not-allowed rounded-lg border border-[#e5e7eb] bg-[#f3f4f6] pl-10 pr-3 text-[13px] text-[#747878]"
+                      className="h-11 w-full cursor-not-allowed rounded-lg border border-border-light bg-bg-primary pl-10 pr-3 text-[13px] text-text-muted"
                     />
                   </div>
-                  <p className="mt-1.5 text-[11px] text-[#9ca3af]">
+                  <p className="mt-1.5 text-[11px] text-text-muted">
                     Your email is tied to your institutional ID and cannot be changed.
                   </p>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="my-8 h-px bg-[#e5e7eb]" />
+              <div className="my-8 h-px bg-bg-tertiary" />
 
               {/* Password & Security */}
-              <div className="mb-6 flex items-center gap-2 text-[14px] font-bold text-[#191c1d]">
+              <div className="mb-6 flex items-center gap-2 text-[14px] font-bold text-text-primary">
                 <Shield className="h-[18px] w-[18px]" strokeWidth={1.8} />
                 Password &amp; Security
               </div>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="flex flex-col">
-                  <label className="mb-2 text-[12px] font-semibold text-[#374151]">Current Password</label>
+                  <label className="mb-2 text-[12px] font-semibold text-text-secondary">Current Password</label>
                   <div className="relative flex items-center">
-                    <Lock className="absolute left-3 h-4 w-4 text-[#9ca3af]" strokeWidth={1.8} />
+                    <Lock className="absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                     <input
                       type="password"
                       value={currentPassword}
@@ -169,9 +169,9 @@ function AdminProfileView({ user }) {
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <label className="mb-2 text-[12px] font-semibold text-[#374151]">New Password</label>
+                  <label className="mb-2 text-[12px] font-semibold text-text-secondary">New Password</label>
                   <div className="relative flex items-center">
-                    <Lock className="absolute left-3 h-4 w-4 text-[#9ca3af]" strokeWidth={1.8} />
+                    <Lock className="absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                     <input
                       type="password"
                       value={newPassword}

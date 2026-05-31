@@ -29,12 +29,12 @@ function Modal({
       <div
         aria-label={title}
         aria-modal="true"
-        className="fixed right-6 top-20 z-[1000] w-full max-w-sm rounded-lg bg-white pt-10 pb-6 px-6 shadow-2xl ring-1 ring-black/5"
+        className="fixed right-6 top-20 z-[1000] w-full max-w-sm rounded-lg bg-bg-card pt-10 pb-6 px-6 shadow-2xl ring-1 ring-text-primary/5"
         role="dialog"
       >
         <button
           aria-label="Close dialog"
-          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full text-[#6b7280] transition hover:bg-black/5 hover:text-black focus:outline-none focus:ring-2 focus:ring-black"
+          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full text-text-muted transition hover:bg-black/5 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-text-primary"
           onClick={onClose}
           type="button"
         >
@@ -53,11 +53,11 @@ function Modal({
       {/* Centered panel */}
       <div className="fixed inset-0 flex items-center justify-center px-4">
         <DialogPanel
-          className={`relative w-full max-w-[440px] rounded-lg bg-white p-8 shadow-2xl sm:p-12 ${panelClassName}`}
+          className={`relative w-full max-w-[440px] rounded-lg bg-bg-card p-8 shadow-2xl sm:p-12 ${panelClassName}`}
         >
           <button
             aria-label="Close dialog"
-            className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full text-[#6b7280] transition hover:bg-black/5 hover:text-black focus:outline-none focus:ring-2 focus:ring-black"
+            className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition hover:bg-black/5 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-text-primary"
             onClick={onClose}
             type="button"
           >

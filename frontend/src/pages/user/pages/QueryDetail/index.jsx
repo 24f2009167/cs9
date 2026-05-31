@@ -151,7 +151,7 @@ function QueryDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center p-10 text-[13px] text-[#747878]">
+      <div className="flex flex-1 items-center justify-center p-10 text-[13px] text-text-muted">
         <Loader className="mr-2 h-4 w-4 animate-spin" /> Loading thread…
       </div>
     )
@@ -160,11 +160,11 @@ function QueryDetailPage() {
   if (!data?.question) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-10">
-        <p className="text-[13px] text-[#747878]">This query could not be found.</p>
+        <p className="text-[13px] text-text-muted">This query could not be found.</p>
         <button
           type="button"
           onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-[13px] font-medium text-[#8c6a40] transition hover:underline"
+          className="flex items-center gap-2 text-[13px] font-medium text-brand transition hover:underline"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.8} /> Back to dashboard
         </button>
@@ -198,7 +198,7 @@ function QueryDetailPage() {
           {/* Header */}
           <div className="mb-10">
             <div className="mb-4 flex items-start justify-between gap-4">
-              <h1 className="font-display text-[28px] font-bold leading-tight text-[#191c1d]">
+              <h1 className="font-display text-[28px] font-bold leading-tight text-text-primary">
                 {question.title}
               </h1>
               {/* Owner: mark solved / reopen */}
@@ -214,7 +214,7 @@ function QueryDetailPage() {
                 ) : (
                   <Button
                     variant="secondary"
-                    className="shrink-0 gap-2 border-[#8c6a40] text-[12px] text-[#8c6a40] hover:border-[#6b5230] hover:text-[#6b5230]"
+                    className="shrink-0 gap-2 border-brand text-[12px] text-brand hover:border-brand hover:text-brand"
                     onClick={() => handleResolveToggle(true)}
                   >
                     <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Mark as Solved
@@ -222,14 +222,14 @@ function QueryDetailPage() {
                 )
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-4 text-[13px] text-[#4b5563]">
+            <div className="flex flex-wrap items-center gap-4 text-[13px] text-text-secondary">
               <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold ${
-                isResolved ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#8c6a40]/10 text-[#8c6a40]'
+                isResolved ? 'bg-success/10 text-success' : 'bg-brand/10 text-brand'
               }`}>
                 <CheckCircle2 className="h-4 w-4" strokeWidth={1.8} /> {statusLabel}
               </span>
               <span className="flex items-center gap-1.5">
-                <strong className="font-semibold text-[#191c1d]">{question.author_name}</strong>
+                <strong className="font-semibold text-text-primary">{question.author_name}</strong>
                 opened this on {fmtDate(question.created_at)}
               </span>
             </div>
@@ -237,7 +237,7 @@ function QueryDetailPage() {
 
           {/* Thread */}
           <div className="relative pl-[60px]">
-            <div className="absolute bottom-0 left-6 top-6 w-px bg-[#d1d5db]" aria-hidden="true" />
+            <div className="absolute bottom-0 left-6 top-6 w-px bg-bg-tertiary" aria-hidden="true" />
 
             {/* Original post */}
             <ThreadItem
@@ -250,7 +250,7 @@ function QueryDetailPage() {
 
             {/* Answers */}
             {answers.length === 0 && (
-              <p className="mb-8 text-[13px] text-[#747878]">No replies yet — be the first to respond.</p>
+              <p className="mb-8 text-[13px] text-text-muted">No replies yet — be the first to respond.</p>
             )}
             {answers.map(ans => {
               const moderationState = ans.moderation_state || 'visible'
@@ -288,28 +288,28 @@ function QueryDetailPage() {
             {/* Reply box — closed once the question is resolved */}
             {isResolved ? (
               <div className="relative mt-8">
-                <div className="rounded-xl border border-dashed border-[#c4c7c7] bg-[#f8f9fa] px-5 py-4 text-center text-[13px] text-[#747878]">
+                <div className="rounded-xl border border-dashed border-border bg-bg-tertiary px-5 py-4 text-center text-[13px] text-text-muted">
                   This question is resolved — new replies are closed.
                 </div>
               </div>
             ) : (
               <div className="relative mt-8">
-                <div className="absolute -left-[54px] top-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-[#8c6a40] text-[12px] font-bold text-white ring-4 ring-[#f3f4f6]">
+                <div className="absolute -left-[54px] top-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-[12px] font-bold text-white ring-4 ring-border-light">
                   {initialsOf(user?.name)}
                 </div>
-                <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                <div className="rounded-xl border border-border-light bg-bg-card p-4 shadow-sm">
                   <textarea
                     value={reply}
                     onChange={e => setReply(e.target.value)}
                     placeholder="Drop your resolution, comment, or suggestions here…"
-                    className="min-h-[80px] w-full resize-y text-[13px] leading-6 text-[#191c1d] outline-none placeholder:text-[#9ca3af]"
+                    className="min-h-[80px] w-full resize-y text-[13px] leading-6 text-text-primary outline-none placeholder:text-text-muted"
                   />
-                  <div className="mt-2 flex justify-end border-t border-[#f3f4f6] pt-4">
+                  <div className="mt-2 flex justify-end border-t border-border-light pt-4">
                     <button
                       type="button"
                       onClick={handlePostReply}
                       disabled={posting}
-                      className="rounded-lg bg-[#8c6a40] px-5 py-2 text-[13px] font-semibold text-white transition hover:bg-[#7a5c35] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-lg bg-brand px-5 py-2 text-[13px] font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {posting ? 'Posting…' : 'Submit Reply'}
                     </button>
@@ -324,13 +324,13 @@ function QueryDetailPage() {
         <div className="hidden w-[280px] shrink-0 flex-col gap-6 lg:flex">
           {/* Tags */}
           {(question.tags || []).length > 0 && (
-            <div className="rounded-lg border border-[#e5e7eb] bg-white p-6">
-              <h4 className="mb-4 text-[11px] font-extrabold uppercase tracking-wide text-[#9ca3af]">Tags</h4>
+            <div className="rounded-lg border border-border-light bg-bg-card p-6">
+              <h4 className="mb-4 text-[11px] font-extrabold uppercase tracking-wide text-text-muted">Tags</h4>
               <div className="flex flex-wrap gap-2">
                 {question.tags.map(t => (
                   <span
                     key={t}
-                    className="rounded-md bg-[#8c6a40]/10 px-2.5 py-1 text-[12px] font-semibold capitalize text-[#8c6a40]"
+                    className="rounded-md bg-brand/10 px-2.5 py-1 text-[12px] font-semibold capitalize text-brand"
                   >
                     {t}
                   </span>
@@ -340,22 +340,22 @@ function QueryDetailPage() {
           )}
 
           {/* Query Status */}
-          <div className="rounded-lg border border-[#e5e7eb] bg-white p-6">
-            <h4 className="mb-6 text-[11px] font-extrabold uppercase tracking-wide text-[#9ca3af]">Query Status</h4>
+          <div className="rounded-lg border border-border-light bg-bg-card p-6">
+            <h4 className="mb-6 text-[11px] font-extrabold uppercase tracking-wide text-text-muted">Query Status</h4>
             <div className="relative pl-5">
-              <div className="absolute bottom-2.5 left-2.5 top-2.5 w-px bg-[#d1d5db]" />
+              <div className="absolute bottom-2.5 left-2.5 top-2.5 w-px bg-bg-tertiary" />
               {steps.map((s, i) => (
                 <div key={i} className={`relative ${i < steps.length - 1 ? 'mb-6' : ''}`}>
                   <div
                     className={`absolute -left-5 top-0 flex h-5 w-5 items-center justify-center rounded-full text-white ${
-                      s.done ? (s.green ? 'bg-[#16a34a]' : 'bg-[#8c6a40]') : 'bg-[#d1d5db]'
+                      s.done ? (s.green ? 'bg-success' : 'bg-brand') : 'bg-bg-tertiary'
                     }`}
                   >
                     <Check className="h-3 w-3" strokeWidth={3} />
                   </div>
                   <div className="pl-2">
-                    <h5 className={`text-[13px] font-bold ${s.green && s.done ? 'text-[#166534]' : 'text-[#191c1d]'}`}>{s.label}</h5>
-                    <p className="text-[11px] text-[#6b7280]">{s.meta}</p>
+                    <h5 className={`text-[13px] font-bold ${s.green && s.done ? 'text-success' : 'text-text-primary'}`}>{s.label}</h5>
+                    <p className="text-[11px] text-text-muted">{s.meta}</p>
                   </div>
                 </div>
               ))}
@@ -363,10 +363,10 @@ function QueryDetailPage() {
           </div>
 
           {/* Related Recent Queries */}
-          <div className="rounded-lg border border-[#e5e7eb] bg-white p-6">
-            <h4 className="mb-5 text-[11px] font-extrabold uppercase tracking-wide text-[#9ca3af]">Related Recent Queries</h4>
+          <div className="rounded-lg border border-border-light bg-bg-card p-6">
+            <h4 className="mb-5 text-[11px] font-extrabold uppercase tracking-wide text-text-muted">Related Recent Queries</h4>
             {related.length === 0 ? (
-              <p className="text-[12px] text-[#9ca3af]">No related queries found.</p>
+              <p className="text-[12px] text-text-muted">No related queries found.</p>
             ) : (
               <ul className="flex flex-col gap-3">
                 {related.map(q => (
@@ -375,10 +375,10 @@ function QueryDetailPage() {
                       type="button"
                       title={q.title}
                       onClick={() => navigate(`/query/${q.question_id}`)}
-                      className="flex w-full items-center gap-2 text-left transition hover:text-[#8c6a40]"
+                      className="flex w-full items-center gap-2 text-left transition hover:text-brand"
                     >
-                      <MessageCircle className="h-3.5 w-3.5 shrink-0 text-[#9ca3af]" strokeWidth={1.8} />
-                      <span className="truncate text-[13px] font-medium text-[#4b5563]">{q.title}</span>
+                      <MessageCircle className="h-3.5 w-3.5 shrink-0 text-text-muted" strokeWidth={1.8} />
+                      <span className="truncate text-[13px] font-medium text-text-secondary">{q.title}</span>
                     </button>
                   </li>
                 ))}
@@ -411,28 +411,28 @@ function ThreadItem({
 
   return (
     <div className="relative mb-8">
-      <div className={`absolute -left-[60px] top-0 flex h-12 w-12 items-center justify-center rounded-lg text-[14px] font-bold text-white ring-4 ring-[#f3f4f6] ${hidden ? 'bg-[#9ca3af]' : 'bg-[#191c1d]'}`}>
+      <div className={`absolute -left-[60px] top-0 flex h-12 w-12 items-center justify-center rounded-lg text-[14px] font-bold text-white ring-4 ring-border-light ${hidden ? 'bg-text-muted' : 'bg-[#191c1d]'}`}>
         {initials}
       </div>
 
-      <div className={`overflow-hidden rounded-xl border bg-white shadow-sm ${hidden ? 'border-dashed border-[#d1d5db]' : 'border-[#e5e7eb]'}`}>
+      <div className={`overflow-hidden rounded-xl border bg-bg-card shadow-sm ${hidden ? 'border-dashed border-border' : 'border-border-light'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#f3f4f6] px-5 py-3">
+        <div className="flex items-center justify-between border-b border-border-light px-5 py-3">
           <div className="flex items-center gap-3">
-            <span className="text-[14px] font-bold text-[#191c1d]">
+            <span className="text-[14px] font-bold text-text-primary">
               {authorName}{isSelf && ' (You)'}
             </span>
-            <span className="text-[12px] text-[#9ca3af]">
+            <span className="text-[12px] text-text-muted">
               {isOriginal ? 'opened this' : 'commented'} {date}
             </span>
           </div>
           {accepted && !hidden && (
-            <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#16a34a]">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-success">
               <Check className="h-3.5 w-3.5" strokeWidth={3} /> SOLUTION
             </span>
           )}
           {hidden && (
-            <span className={`flex items-center gap-1.5 text-[11px] font-bold ${moderationState === 'deleted' ? 'text-[#9ca3af]' : 'text-[#b45309]'}`}>
+            <span className={`flex items-center gap-1.5 text-[11px] font-bold ${moderationState === 'deleted' ? 'text-text-muted' : 'text-warning'}`}>
               <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.8} />
               {moderationState === 'deleted' ? 'DELETED' : 'UNDER REVIEW'}
             </span>
@@ -441,32 +441,32 @@ function ThreadItem({
 
         {/* Body — tombstone when hidden */}
         {hidden ? (
-          <p className="px-5 py-5 text-[13px] italic leading-6 text-[#9ca3af]">{tombstone}</p>
+          <p className="px-5 py-5 text-[13px] italic leading-6 text-text-muted">{tombstone}</p>
         ) : (
           <div
-            className="px-5 py-5 text-[14px] leading-6 text-[#4b5563]"
+            className="px-5 py-5 text-[14px] leading-6 text-text-secondary"
             dangerouslySetInnerHTML={{ __html: body }}
           />
         )}
 
         {/* Footer (visible answers only) */}
         {!isOriginal && !hidden && (
-          <div className="flex items-center justify-between border-t border-[#f3f4f6] bg-[#fafafa] px-5 py-3">
-            <div className="flex items-center gap-2 text-[14px] font-bold text-[#191c1d]">
+          <div className="flex items-center justify-between border-t border-border-light bg-bg-tertiary px-5 py-3">
+            <div className="flex items-center gap-2 text-[14px] font-bold text-text-primary">
               <button
                 type="button"
                 onClick={onVoteUp}
                 title={myVote === 1 ? 'Remove upvote' : 'Upvote'}
-                className={`transition ${myVote === 1 ? 'text-[#8c6a40]' : 'text-[#6b7280] hover:text-[#8c6a40]'}`}
+                className={`transition ${myVote === 1 ? 'text-brand' : 'text-text-muted hover:text-brand'}`}
               >
                 <ChevronUp className="h-5 w-5" strokeWidth={myVote === 1 ? 3 : 2} />
               </button>
-              <span className={myVote === 1 ? 'text-[#8c6a40]' : myVote === -1 ? 'text-[#dc2626]' : ''}>{score}</span>
+              <span className={myVote === 1 ? 'text-brand' : myVote === -1 ? 'text-danger' : ''}>{score}</span>
               <button
                 type="button"
                 onClick={onVoteDown}
                 title={myVote === -1 ? 'Remove downvote' : 'Downvote'}
-                className={`transition ${myVote === -1 ? 'text-[#dc2626]' : 'text-[#6b7280] hover:text-[#dc2626]'}`}
+                className={`transition ${myVote === -1 ? 'text-danger' : 'text-text-muted hover:text-danger'}`}
               >
                 <ChevronDown className="h-5 w-5" strokeWidth={myVote === -1 ? 3 : 2} />
               </button>
@@ -477,18 +477,18 @@ function ThreadItem({
                 <button
                   type="button"
                   onClick={onAccept}
-                  className="flex items-center gap-1.5 text-[12px] font-bold text-[#16a34a] transition hover:text-[#15803d]"
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-success transition hover:text-success"
                 >
                   <Check className="h-3.5 w-3.5" strokeWidth={3} /> MARK AS RESOLUTION
                 </button>
               )}
               {isSelf ? (
-                <span className="text-[11px] italic text-[#9ca3af]">Cannot report own comment</span>
+                <span className="text-[11px] italic text-text-muted">Cannot report own comment</span>
               ) : (
                 <button
                   type="button"
                   onClick={onReport}
-                  className="flex items-center gap-1.5 text-[12px] font-bold text-[#9ca3af] transition hover:text-[#dc2626]"
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-text-muted transition hover:text-danger"
                 >
                   <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.8} /> REPORT
                 </button>

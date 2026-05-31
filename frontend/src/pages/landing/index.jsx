@@ -244,38 +244,38 @@ function Landing() {
   const visiblePageProgress = hasSections ? pageProgress : 0
 
   return (
-    <div className="min-h-svh bg-[#f8f9fa] text-[#191c1d]">
-      <header className="sticky top-0 z-50 border-b border-[#c4c7c7] bg-[#f8f9fa]/95 backdrop-blur">
+    <div className="min-h-svh bg-bg-tertiary text-text-primary">
+      <header className="sticky top-0 z-50 border-b border-border bg-bg-tertiary/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-300 items-center justify-between px-2 py-3 sm:px-2 sm:py-4">
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex flex-col text-left transition hover:opacity-80"
           >
-            <span className="font-display text-[18px] font-bold leading-tight text-[#0f172a]">
-              {__PROJECT_NAME__ || 'Vicharanashala'}
+            <span className="font-display text-[18px] font-bold leading-tight text-text-primary sm:text-[22px]">
+              {__PROJECT_NAME__}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#444748]">
-              {__PROJECT_TAGLINE__ || 'Lab Internship Hub'}
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">
+              {__PROJECT_TAGLINE__}
             </span>
-          </button>
-          <Button variant="secondary" className="text-[10px] bg-[#8c6a40]/80 text-white" onClick={handleHeaderButtonClick}>
+          </a>
+          <Button variant="secondary" className="text-[10px] bg-brand/80 text-white" onClick={handleHeaderButtonClick}>
             {currentUser ? 'Dashboard' : 'Login'}
           </Button>
         </div>
       </header>
 
       <div id="top" className="mx-auto flex w-full max-w-300">
-        <aside className="sticky top-16 hidden w-62 shrink-0 flex-col self-start border-r border-[#c4c7c7] pr-3 py-6 md:flex">
+        <aside className="sticky top-16 hidden w-62 shrink-0 flex-col self-start border-r border-border pr-3 py-6 md:flex">
           <div className="mb-4">
-            <h2 className="font-display text-[14px] font-semibold leading-snug text-black">
+            <h2 className="font-display text-[14px] font-semibold leading-snug text-text-primary">
               FAQ Tags
             </h2>
-            <p className="mt-1 text-[12px] leading-normal text-[#444748]">Internship Guide</p>
+            <p className="mt-1 text-[12px] leading-normal text-text-secondary">Internship Guide</p>
           </div>
 
           <nav aria-label="FAQ tags" className="relative flex flex-col gap-1 pl-2">
-            <span className="absolute bottom-2 left-0 top-2 w-px bg-[#d9dadb]" aria-hidden="true" />
+            <span className="absolute bottom-2 left-0 top-2 w-px bg-bg-tertiary" aria-hidden="true" />
             <span
               className="absolute left-0 top-2 w-px bg-black transition-[height] duration-200"
               style={{ height: `calc((100% - 16px) * ${visiblePageProgress / 100})` }}
@@ -289,7 +289,7 @@ function Landing() {
                   href={`#${section.id}`}
                   key={section.id}
                   className={`flex min-h-10 items-center gap-3 px-2 py-2 text-[14px] leading-normal transition ${
-                    isActive ? 'border-r-2 border-[#8c6a40] font-bold text-[#8c6a40] bg-[#8c6a40]/10' : 'text-[#444748] hover:bg-[#8c6a40]/10 hover:text-[#8c6a40]'
+                    isActive ? 'border-r-2 border-brand font-bold text-brand bg-brand/10' : 'text-text-secondary hover:bg-brand/10 hover:text-brand'
                   }`}
                 >
                   <TagIcon className="h-4 w-4 shrink-0" name={section.icon} />
@@ -303,14 +303,14 @@ function Landing() {
         <main className="min-w-0 flex-1 pl-2 pr-4 py-6">
           <div className="mb-8 md:hidden">
             <div className="mb-3 flex items-center justify-between gap-4">
-              <p className="font-display text-[14px] font-semibold leading-snug text-black">
+              <p className="font-display text-[14px] font-semibold leading-snug text-text-primary">
                 FAQ Tags
               </p>
-              <p className="text-[12px] font-semibold text-[#444748]">
+              <p className="text-[12px] font-semibold text-text-secondary">
                 {Math.round(visiblePageProgress)}%
               </p>
             </div>
-            <div className="mb-4 h-px overflow-hidden bg-[#d9dadb]">
+            <div className="mb-4 h-px overflow-hidden bg-bg-tertiary">
               <div
                 className="h-full bg-black transition-[width] duration-200"
                 style={{ width: `${visiblePageProgress}%` }}
@@ -329,8 +329,8 @@ function Landing() {
                     key={section.id}
                     className={`flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-[13px] ${
                       isActive
-                        ? 'border-black bg-black text-white'
-                        : 'border-[#c4c7c7] bg-white text-[#444748]'
+                        ? 'border-text-primary bg-black text-white'
+                        : 'border-border bg-bg-card text-text-secondary'
                     }`}
                   >
                     <TagIcon className="h-4 w-4 shrink-0" name={section.icon} />
@@ -344,12 +344,12 @@ function Landing() {
           <label className="relative mb-8 block w-full" htmlFor="faq-search">
             <Search
               aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#747878]"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
               strokeWidth={1.8}
             />
             <input
               id="faq-search"
-              className="h-10 w-full rounded-lg border border-[#c4c7c7] bg-white pl-9 pr-4 text-[12px] outline-none transition placeholder:text-[#9da1a1] focus:border-black focus:ring-1 focus:ring-black"
+              className="h-10 w-full rounded-lg border border-border bg-bg-card pl-9 pr-4 text-[12px] outline-none transition placeholder:text-text-muted focus:border-text-primary focus:ring-1 focus:ring-text-primary"
               placeholder="Search for questions (e.g., 'stipend', 'selection')..."
               type="search"
               value={query}
@@ -358,17 +358,17 @@ function Landing() {
           </label>
 
           {isLoading && (
-            <section className="rounded-lg border border-[#c4c7c7] bg-white p-6">
-              <p className="text-[14px] leading-7 text-[#444748]">Loading FAQ data...</p>
+            <section className="rounded-lg border border-border bg-bg-card p-6">
+              <p className="text-[14px] leading-7 text-text-secondary">Loading FAQ data...</p>
             </section>
           )}
 
           {isError && (
-            <section className="rounded-lg border border-[#c4c7c7] bg-white p-6">
-              <h1 className="mb-2 font-display text-[18px] font-semibold leading-snug text-black">
+            <section className="rounded-lg border border-border bg-bg-card p-6">
+              <h1 className="mb-2 font-display text-[18px] font-semibold leading-snug text-text-primary">
                 FAQ data is unavailable
               </h1>
-              <p className="text-[14px] leading-7 text-[#444748]">
+              <p className="text-[14px] leading-7 text-text-secondary">
                 {error?.message || 'Unable to load FAQs'}. Make sure the backend is running.
               </p>
             </section>
@@ -383,15 +383,15 @@ function Landing() {
                   className="scroll-mt-28"
                   key={section.id}
                 >
-                  <div className="mb-4 flex items-end justify-between gap-4 border-b border-[#c4c7c7] pb-3">
+                  <div className="mb-4 flex items-end justify-between gap-4 border-b border-border pb-3">
                     <h1
                       id={`${section.id}-heading`}
-                      className="font-display text-[18px] font-semibold leading-snug text-black"
+                      className="font-display text-[18px] font-semibold leading-snug text-text-primary"
                     >
                       {section.label}
                     </h1>
                     <div className="flex shrink-0 items-center gap-2">
-                      <p className="text-[12px] font-bold leading-none text-[#747878]">
+                      <p className="text-[12px] font-bold leading-none text-text-muted">
                         {section.faqs.length} QUESTIONS
                       </p>
                       <Tooltip
@@ -405,7 +405,7 @@ function Landing() {
                         <button
                           type="button"
                           onClick={() => toggleSection(section)}
-                          className="flex h-6 w-6 items-center justify-center rounded-full border border-[#c4c7c7] bg-white text-[#747878] transition hover:border-black hover:text-black"
+                          className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-bg-card text-text-muted transition hover:border-text-primary hover:text-text-primary"
                         >
                           {section.faqs.length > 0 &&
                           section.faqs.every((faq) => openKeys.has(`${section.id}:${faq.id}`)) ? (
@@ -438,11 +438,11 @@ function Landing() {
               ))}
 
               {visibleSections.length === 0 && (
-                <section className="rounded-lg border border-[#c4c7c7] bg-white p-6">
-                  <h1 className="mb-2 font-display text-[18px] font-semibold leading-snug text-black">
+                <section className="rounded-lg border border-border bg-bg-card p-6">
+                  <h1 className="mb-2 font-display text-[18px] font-semibold leading-snug text-text-primary">
                     No questions found
                   </h1>
-                  <p className="text-[14px] leading-7 text-[#444748]">
+                  <p className="text-[14px] leading-7 text-text-secondary">
                     Try a different keyword or clear the search field to return to the full FAQ.
                   </p>
                 </section>
@@ -451,11 +451,11 @@ function Landing() {
           )}
 
           {!isLoading && !isError && !hasSections && (
-            <section className="rounded-lg border border-[#c4c7c7] bg-white p-6">
-              <h1 className="mb-2 font-display text-[18px] font-semibold leading-snug text-black">
+            <section className="rounded-lg border border-border bg-bg-card p-6">
+              <h1 className="mb-2 font-display text-[18px] font-semibold leading-snug text-text-primary">
                 No FAQs published
               </h1>
-              <p className="text-[14px] leading-7 text-[#444748]">
+              <p className="text-[14px] leading-7 text-text-secondary">
                 Published FAQ questions will appear here automatically once they have tags.
               </p>
             </section>
@@ -464,24 +464,24 @@ function Landing() {
         </main>
       </div>
 
-      <section className="border-t border-[#c4c7c7]/60 px-2 py-6 sm:px-2">
-        <div className="relative mx-auto flex min-h-48 max-w-300 items-center overflow-hidden rounded-xl border border-[#c4c7c7] bg-white p-6">
+      <section className="border-t border-border/60 px-2 py-6 sm:px-2">
+        <div className="relative mx-auto flex min-h-48 max-w-300 items-center overflow-hidden rounded-xl border border-border bg-bg-card p-6">
           <img
             alt="Academic research environment"
             className="absolute inset-0 h-full w-full object-cover opacity-10 grayscale"
             src={labSupportImage}
           />
           <div className="relative z-10 max-w-lg">
-            <h2 className="mb-2 font-display text-[15px] font-semibold leading-snug text-black">
+            <h2 className="mb-2 font-display text-[15px] font-semibold leading-snug text-text-primary">
               Need direct assistance?
             </h2>
-            <p className="mb-4 text-[13px] leading-6 text-[#444748]">
+            <p className="mb-4 text-[13px] leading-6 text-text-secondary">
               Our support team is available during lab hours to help with specific onboarding or
               platform issues.
             </p>
             <Button
               variant="secondary"
-              className="text-[10px] border-transparent bg-[#8c6a40]/80 text-white hover:border-transparent hover:bg-[#7a5c35]"
+              className="text-[10px] border-transparent bg-brand/80 text-white hover:border-transparent hover:bg-brand-hover"
               onClick={() => currentUser ? navigate('/raise-query') : setIsLoginModalOpen(true)}
             >
               Contact Crowd for Solution

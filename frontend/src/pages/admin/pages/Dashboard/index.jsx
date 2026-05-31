@@ -39,7 +39,7 @@ function formatNumber(value) {
 
 function MetricCard({ title, value, Icon, iconClassName, trend, trendType = 'up', badge }) {
   return (
-    <div className="rounded-lg border border-[#e5e7eb] bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
       <div className="mb-5 flex items-start justify-between">
         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconClassName}`}>
           <Icon className="h-5 w-5" strokeWidth={1.8} />
@@ -63,8 +63,8 @@ function MetricCard({ title, value, Icon, iconClassName, trend, trendType = 'up'
           </span>
         )}
       </div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#6b7280]">{title}</p>
-      <p className="text-[28px] font-semibold leading-none text-[#111827]">{value}</p>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-text-muted">{title}</p>
+      <p className="text-[28px] font-semibold leading-none text-text-primary">{value}</p>
     </div>
   )
 }
@@ -77,7 +77,7 @@ function ActivityItem({ icon: Icon, title, meta, tone = 'neutral' }) {
         ? 'bg-amber-100 text-amber-700'
         : tone === 'red'
           ? 'bg-red-100 text-red-700'
-          : 'bg-[#f3f4f6] text-[#6b7280]'
+          : 'bg-bg-primary text-text-muted'
 
   return (
     <div className="flex gap-3">
@@ -85,8 +85,8 @@ function ActivityItem({ icon: Icon, title, meta, tone = 'neutral' }) {
         <Icon className="h-4 w-4" strokeWidth={1.8} />
       </div>
       <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold text-[#111827]">{title}</p>
-        <p className="mt-1 text-[11px] text-[#6b7280]">{meta}</p>
+        <p className="truncate text-[13px] font-semibold text-text-primary">{title}</p>
+        <p className="mt-1 text-[11px] text-text-muted">{meta}</p>
       </div>
     </div>
   )
@@ -134,10 +134,10 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
     <div className="flex-1 overflow-y-auto p-5 lg:p-8">
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="font-display text-[24px] font-semibold leading-tight text-[#111827]">
+          <h1 className="font-display text-[24px] font-semibold leading-tight text-text-primary">
             Main Dashboard
           </h1>
-          <p className="mt-2 text-[13px] leading-6 text-[#4b5563]">
+          <p className="mt-2 text-[13px] leading-6 text-text-secondary">
             Real-time platform metrics for the lab internship hub.
           </p>
         </div>
@@ -191,15 +191,15 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <section className="rounded-lg border border-[#e5e7eb] bg-white p-5 shadow-sm">
+        <section className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-[17px] font-bold text-[#111827]">Query Volume by Category</h2>
-            <div className="flex gap-4 text-[12px] text-[#6b7280]">
+            <h2 className="text-[17px] font-bold text-text-primary">Query Volume by Category</h2>
+            <div className="flex gap-4 text-[12px] text-text-muted">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-blue-600" /> New
               </span>
               <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#d1d5db]" /> Resolved
+                <span className="h-2 w-2 rounded-full bg-bg-tertiary" /> Resolved
               </span>
             </div>
           </div>
@@ -237,35 +237,35 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
           </div>
         </section>
 
-        <section className="rounded-lg border border-[#e5e7eb] bg-white p-5 shadow-sm">
-          <h2 className="mb-6 text-[17px] font-bold text-[#111827]">Resolver Activity</h2>
+        <section className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
+          <h2 className="mb-6 text-[17px] font-bold text-text-primary">Resolver Activity</h2>
           <div className="flex flex-col gap-5">
             {activityItems.length === 0 ? (
-              <p className="text-[13px] text-[#747878]">No recent platform activity.</p>
+              <p className="text-[13px] text-text-muted">No recent platform activity.</p>
             ) : (
               activityItems.map((item) => <ActivityItem key={item.id} {...item} />)
             )}
           </div>
           <button
             type="button"
-            className="mt-6 w-full border-t border-[#e5e7eb] pt-4 text-center text-[13px] font-semibold text-blue-700 transition hover:text-blue-900"
+            className="mt-6 w-full border-t border-border-light pt-4 text-center text-[13px] font-semibold text-blue-700 transition hover:text-blue-900"
           >
             View all activity
           </button>
         </section>
       </div>
 
-      <section className="overflow-hidden rounded-lg border border-[#e5e7eb] bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-[#e5e7eb] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-border-light px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-[17px] font-bold text-[#111827]">Needs Attention</h2>
-            <p className="mt-1 text-[12px] text-[#6b7280]">
+            <h2 className="text-[17px] font-bold text-text-primary">Needs Attention</h2>
+            <p className="mt-1 text-[12px] text-text-muted">
               Showing {attentionRows.length} open moderation items
             </p>
           </div>
           <button
             type="button"
-            className="flex items-center gap-2 text-[12px] font-semibold text-[#6b7280] transition hover:text-[#111827]"
+            className="flex items-center gap-2 text-[12px] font-semibold text-text-muted transition hover:text-text-primary"
           >
             <Filter className="h-4 w-4" strokeWidth={1.8} />
             Filter
@@ -275,7 +275,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-[13px]">
             <thead>
-              <tr className="border-b border-[#e5e7eb] bg-[#f9fafb] text-left text-[11px] font-bold uppercase tracking-wide text-[#6b7280]">
+              <tr className="border-b border-border-light bg-bg-tertiary text-left text-[11px] font-bold uppercase tracking-wide text-text-muted">
                 <th className="px-5 py-3">ID</th>
                 <th className="px-5 py-3">Target</th>
                 <th className="px-5 py-3">Reason</th>
@@ -286,20 +286,20 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
             <tbody>
               {attentionRows.length === 0 ? (
                 <tr>
-                  <td className="px-5 py-6 text-center text-[#747878]" colSpan={5}>
+                  <td className="px-5 py-6 text-center text-text-muted" colSpan={5}>
                     No escalated items need attention.
                   </td>
                 </tr>
               ) : (
                 attentionRows.map((flag) => (
-                  <tr key={flag.flag_id} className="border-b border-[#f3f4f6] last:border-b-0">
-                    <td className="px-5 py-4 font-bold text-[#111827]">
+                  <tr key={flag.flag_id} className="border-b border-border-light last:border-b-0">
+                    <td className="px-5 py-4 font-bold text-text-primary">
                       #{flag.flag_id?.slice(0, 8) || 'FLAG'}
                     </td>
-                    <td className="px-5 py-4 capitalize text-[#374151]">
+                    <td className="px-5 py-4 capitalize text-text-secondary">
                       {flag.target_type || 'content'} {flag.target_id?.slice(0, 8) || ''}
                     </td>
-                    <td className="max-w-[320px] truncate px-5 py-4 text-[#4b5563]">
+                    <td className="max-w-[320px] truncate px-5 py-4 text-text-secondary">
                       {flag.reason || 'Pending review'}
                     </td>
                     <td className="px-5 py-4">
@@ -307,7 +307,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
                         {flag.status || 'pending'}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-[#374151]">
+                    <td className="px-5 py-4 text-text-secondary">
                       {flag.reviewed_by || 'Admin queue'}
                     </td>
                   </tr>
@@ -319,25 +319,25 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-[#e5e7eb] bg-white p-4">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6b7280]">Users</p>
-          <p className="mt-2 text-[22px] font-semibold text-[#111827]">
+        <div className="rounded-lg border border-border-light bg-bg-card p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">Users</p>
+          <p className="mt-2 text-[22px] font-semibold text-text-primary">
             {formatNumber(usersMetrics.total)}
           </p>
         </div>
-        <div className="rounded-lg border border-[#e5e7eb] bg-white p-4">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6b7280]">
+        <div className="rounded-lg border border-border-light bg-bg-card p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">
             New this week
           </p>
-          <p className="mt-2 text-[22px] font-semibold text-[#111827]">
+          <p className="mt-2 text-[22px] font-semibold text-text-primary">
             {formatNumber(usersMetrics.thisWeek)}
           </p>
         </div>
-        <div className="rounded-lg border border-[#e5e7eb] bg-white p-4">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-[#6b7280]">
+        <div className="rounded-lg border border-border-light bg-bg-card p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">
             Spark Ledger
           </p>
-          <p className="mt-2 text-[22px] font-semibold text-[#111827]">
+          <p className="mt-2 text-[22px] font-semibold text-text-primary">
             {formatNumber(metrics.sparks?.total)}
           </p>
         </div>
