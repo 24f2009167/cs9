@@ -219,11 +219,22 @@ export async function listQuestions(req, res, next) {
 
     const nameById = await getDisplayNameByUserId(questions.map((q) => q.author_id))
 
+    // Attach hasVoted by checking the Vote collection for +1 votes by the current user
+    const questionIds = questions.map((q) => q.question_id)
+    const myUpvotes = await Vote.find({
+      user_id: req.user.userId,
+      target_type: 'question',
+      target_id: { $in: questionIds },
+      value: 1,
+    }).select('target_id')
+    const upvotedSet = new Set(myUpvotes.map((v) => v.target_id))
+
     res.json({
       success: true,
       questions: questions.map((q) => ({
         ...q,
         author_name: q.is_anonymous ? 'Anonymous' : nameById[q.author_id] || 'User',
+        hasVoted: upvotedSet.has(q.question_id),
       })),
       pagination: paginationResult(page, limit, total),
     })
@@ -443,6 +454,7 @@ export async function acceptAnswer(req, res, next) {
       body: 'Your answer was accepted.',
       reference_id: question.question_id,
       reference_type: 'question',
+      link: `/query/${question.question_id}`,
     })
 
     res.json({ success: true, message: 'Answer accepted' })

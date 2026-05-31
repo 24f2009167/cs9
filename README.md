@@ -1,59 +1,74 @@
-# Rogāre — Internship FAQ Platform
+# QueryHub — Project Repository
 
-A full-stack Q&A platform for lab interns at IIT Ropar, built with React + Vite (frontend) and Node.js + Express + MongoDB (backend). Supports role-based access (user / admin), FAQ browsing, search, and a spark-based engagement system.
-
-**Stack:** React 19, Tailwind CSS v4, Inter + Playfair Display, Node.js, Express 5, Mongoose, Argon2, JWT (httpOnly cookie)
-
-**Run locally:** start the backend (`npm run dev` in `/backend`) then the frontend (`npm run dev` in `/frontend`), and set `VITE_API_BASE_URL` in a `.env` file pointing to the backend.
-
-## Environment Setup
-
-Both backend and frontend need `.env` files before running. Copy the examples and fill in your values:
-
-### Backend — `backend/.env`
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Required variables:
-
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Port the server runs on (default: `5000`) |
-| `MONGODB_URI` | MongoDB connection string (local or Atlas) |
-| `JWT_SECRET` | Secret string for signing JWTs (min. 32 chars) |
-| `ALLOWED_ORIGINS` | comma-separated list of allowed CORS origins (e.g. `http://localhost:5173,http://localhost:3000`) |
-| `NODE_ENV` | `development` or `production` |
-
-### Frontend — `frontend/.env`
-
-```bash
-cp frontend/.env.example frontend/.env
-```
-
-Required variables:
-
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_BASE_URL` | Backend URL (e.g. `http://localhost:5000`) |
-| `VITE_APP_NAME` | App display name (e.g. `Rogāre`) |
-
-## Contributors
-
-| # | Name | Role |
-|---|------|------|
-| 1 | Contributor Name | Samyabrata Roy |
-| 2 | Contributor Name | Nandini |
-| 3 | Contributor Name | SAMAD MOHAMMED |
-| 4 | Contributor Name | Ansh Varshney |
-| 5 | Contributor Name | Kashish Panwar |
-| 6 | Contributor Name | Shreya Choudhary |
-| 7 | Contributor Name | Rahul Prasad |
-| 8 | Contributor Name | Abhi Sriya |
-| 9 | Contributor Name | Adhin Mahesh |
-| 10 | Contributor Name | Udarsh Goyal |
+**vicharanashala/cs9** — Doubt Resolution Platform
 
 ---
 
-© VLED Lab, IIT Ropar. All rights reserved. This software was developed by VINS Interns using Vicharanashala Lab's resources during the internship period.
+## Repository Structure
+
+```
+cs9/
+├── README.md               ← You are here
+├── context.md              ← Full project context (single source of truth)
+├── LEADERBOARD.md          ← Leaderboard feature documentation
+├── feature.md              ← Feature specs and roadmap
+│
+├── backend/
+│   ├── fileStructure.md    ← Backend file tree
+│   └── src/
+│       ├── controllers/    ← Route handlers (answer, auth, comment, flag, notification, question, spark, user, …)
+│       ├── models/         ← Mongoose schemas (answer, question, user, vote, notification, flag, …)
+│       ├── routes/         ← Express route definitions
+│       ├── services/       ← Business logic (content, question-allocation, spark, role)
+│       ├── scheduled/      ← Cron jobs (question-assignment)
+│       ├── scripts/        ← Migrations, seeds, rebuild utilities
+│       ├── middleware/     ← Auth middleware, error handler
+│       └── utils/          ← Feature logger, HTTP utilities
+│
+└── frontend/
+    ├── fileStructure.md    ← Frontend file tree
+    ├── context.md          ← Frontend-specific context
+    ├── index.html
+    ├── vite.config.js
+    ├── jsconfig.json
+    └── src/
+        ├── App.jsx
+        ├── api/            ← API client (axios instance)
+        ├── components/     ← Shared UI (Button, Modal, NotificationModal)
+        ├── contexts/       ← Auth, Role contexts
+        ├── layouts/        ← Admin/User layout wrappers
+        ├── pages/
+        │   ├── user/       ← Student dashboard, contributions, profile settings
+        │   │   ├── pages/Dashboard/
+        │   │   ├── pages/MyContributions/
+        │   │   └── pages/ProfileSettings/
+        │   └── admin/      ← Admin panel, FAQ management, queries, spark leaderboard, profile
+        │       ├── components/Header/, LeftPane/
+        │       └── pages/Dashboard/, FAQManagement/, QueriesManagement/, SparkLeaderboard/, AdminProfile/
+        ├── stores/         ← Zustand stores (auth, theme)
+        └── routes/         ← React Router route definitions
+```
+
+---
+
+## Current Status
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Issue #2 (antigravity issues) | ✅ Merged to `main` | 9 sub-issues fixed |
+| Issue #12 (clickable cards) | ✅ Merged to `main` | QuestionCard fully clickable |
+| Admin component READMEs | ✅ Merged to `main` | All admin pages documented |
+| Issue #1 (voting/unvote) | ❌ Closed as NOT BUG | Unvoting already works |
+| Notification fixes | 🔄 In progress | Local branch: `notification` |
+
+**`main` SHA:** `2e25d75`
+
+---
+
+## Key Documentation
+
+- **[`context.md`](./context.md)** — Full project context (source of truth for AI sessions)
+- **[`backend/fileStructure.md`](./backend/fileStructure.md)** — Backend file tree
+- **[`frontend/fileStructure.md`](./frontend/fileStructure.md)** — Frontend file tree
+- **[`LEADERBOARD.md`](./LEADERBOARD.md)** — Leaderboard implementation
+- **[`feature.md`](./feature.md)** — Feature specs and roadmap

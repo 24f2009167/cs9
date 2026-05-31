@@ -73,6 +73,7 @@ export async function createAnswer(req, res, next) {
         body: 'Your question received a new answer.',
         reference_id: question.question_id,
         reference_type: 'question',
+        link: `/query/${question.question_id}`,
       })
     }
 
@@ -137,6 +138,26 @@ export async function deleteAnswer(req, res, next) {
     answer.moderation_status = 'rejected'
     answer.removal_reason = req.body.reason || ''
     await answer.save()
+
+    // Sync parent question counters
+    await Question.updateOne(
+      { question_id: answer.question_id },
+      { $inc: { answer_count: -1 } },
+    )
+
+    // If this was an expert answer, re-evaluate has_expert_answer
+    if (answer.is_expert) {
+      const hasOtherExpertAnswer = await Answer.exists({
+        question_id: answer.question_id,
+        is_deleted: { $ne: true },
+        is_expert: true,
+        answer_id: { $ne: answer.answer_id },
+      })
+      await Question.updateOne(
+        { question_id: answer.question_id },
+        { $set: { has_expert_answer: !!hasOtherExpertAnswer } },
+      )
+    }
 
     res.json({ success: true, message: 'Answer deleted' })
   } catch (error) {

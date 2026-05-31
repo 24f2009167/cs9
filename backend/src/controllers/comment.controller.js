@@ -93,6 +93,7 @@ export async function createComment(req, res, next) {
         body: parent ? 'Someone replied to your comment.' : 'Someone commented on your answer.',
         reference_id: comment.comment_id,
         reference_type: 'comment',
+        link: `/query/${answer.question_id}`,
         ...(parent && {
           thread_anchor: {
             answer_id: answer.answer_id,

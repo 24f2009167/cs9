@@ -80,15 +80,44 @@ export async function applyModerationAction({
   }
 
   if (action === 'hide' || action === 'delete') {
-    updates.moderation_status = 'rejected'
-    if (targetType === 'question') {
-      updates.status = 'removed'
-    }
     if (targetType === 'answer') {
-      updates.is_deleted = true
+      const answer = await Answer.findOne({ answer_id: targetId }).select('question_id is_expert')
+      if (answer) {
+        await Question.updateOne(
+          { question_id: answer.question_id },
+          { $inc: { answer_count: -1 } },
+        )
+        if (answer.is_expert) {
+          const hasOtherExpertAnswer = await Answer.exists({
+            question_id: answer.question_id,
+            is_deleted: { $ne: true },
+            is_expert: true,
+            answer_id: { $ne: targetId },
+          })
+          await Question.updateOne(
+            { question_id: answer.question_id },
+            { $set: { has_expert_answer: !!hasOtherExpertAnswer } },
+          )
+        }
+      }
     }
-    if (targetType === 'comment') {
-      updates.is_deleted = true
+  }
+
+  if (action === 'restore') {
+    if (targetType === 'answer') {
+      const answer = await Answer.findOne({ answer_id: targetId }).select('question_id is_expert')
+      if (answer) {
+        await Question.updateOne(
+          { question_id: answer.question_id },
+          { $inc: { answer_count: 1 } },
+        )
+        if (answer.is_expert) {
+          await Question.updateOne(
+            { question_id: answer.question_id },
+            { $set: { has_expert_answer: true } },
+          )
+        }
+      }
     }
   }
 

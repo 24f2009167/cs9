@@ -45,6 +45,9 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: ['question', 'answer', 'comment', 'user'],
     },
+    link: {
+      type: String,
+    },
     thread_anchor: {
       answer_id: String,
       root_comment_id: String,

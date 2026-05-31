@@ -188,6 +188,7 @@ export async function resolveFlag(req, res, next) {
         body: req.body.resolutionNote || 'An administrator reviewed your content.',
         reference_id: flag.target_id,
         reference_type: flag.target_type,
+        link: target.question_id ? `/query/${target.question_id}` : null,
       })
     }
 
@@ -206,6 +207,7 @@ export async function resolveFlag(req, res, next) {
       body: `Your report has been ${status}.`,
       reference_id: flag.target_id,
       reference_type: flag.target_type,
+      link: target.question_id ? `/query/${target.question_id}` : null,
     })
 
     res.json({ success: true, message: 'Flag resolved' })

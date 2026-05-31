@@ -1,7 +1,6 @@
 import type { FC } from 'react'
-import { ChevronUp, MessageCircle, Reply, CheckCircle, Clock, Flag } from 'lucide-react'
+import { ChevronUp, MessageCircle, Reply, CheckCircle, Clock } from 'lucide-react'
 import { STATUS_CONFIG } from '../../constants'
-import { notifyError } from '../../../../lib/notify'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -39,15 +38,17 @@ const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
     query.status === 'Active' ? CheckCircle
     : query.status === 'In Progress' ? Clock
     : CheckCircle
-  const isResolved = query.status === 'Resolved'
 
   return (
-    <div className="mb-4 flex rounded-xl border border-[#9ca3af] bg-white p-5">
+    <div
+      className="mb-4 flex cursor-pointer rounded-xl border border-[#9ca3af] bg-white p-5 transition hover:border-[#8c6a40] hover:shadow-sm"
+      onClick={() => onClick?.(query.id)}
+    >
       {/* Upvote */}
       <button
         type="button"
-        onClick={() => onUpvote(query.id)}
-        className="mr-5 flex h-[60px] min-w-[60px] flex-col items-center justify-center rounded-lg text-[18px] font-bold transition-all"
+        onClick={(e) => { e.stopPropagation(); onUpvote(query.id) }}
+        className="mr-5 flex h-[60px] min-w-[60px] cursor-pointer flex-col items-center justify-center rounded-lg text-[18px] font-bold transition-all"
         style={{
           background: query.hasUpvoted ? '#8c6a40' : '#d1d5db',
           color:      query.hasUpvoted ? '#fff'    : '#111827',
@@ -61,7 +62,7 @@ const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
         <span>{query.upvotes}</span>
       </button>
 
-      {/* Content */}
+      {/* Content — clickable via parent div */}
       <div className="min-w-0 flex-1">
         <div className="mb-3 flex items-start justify-between gap-4">
           <div className="flex flex-wrap gap-2">
@@ -83,31 +84,17 @@ const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
         <p className="mb-4 text-[13px] leading-6 text-[#444748]" dangerouslySetInnerHTML={{ __html: query.desc }} />
 
         <div className="flex items-center gap-5 text-[12px] font-medium text-[#444748]">
-          {/* Comments count — display only */}
+          {/* Total replies (answer_count) */}
           <span className="flex items-center gap-1.5">
             <MessageCircle className="h-3.5 w-3.5" strokeWidth={1.8} />
-            {query.comments} {query.comments === 1 ? 'comment' : 'comments'}
+            {query.comments} {query.comments === 1 ? 'reply' : 'replies'}
           </span>
 
-          {/* Reply / View — opens the replies view */}
-<button
-            type="button"
-            className="flex items-center gap-1.5 transition hover:text-[#8c6a40]"
-            onClick={() => onClick?.(query.id)}
-          >
+          {/* Reply indicator — card is fully clickable */}
+          <span className="flex items-center gap-1.5">
             <Reply className="h-3.5 w-3.5" strokeWidth={1.8} />
-            {isResolved ? 'View' : 'Reply'}
-          </button>
-
-          {/* Report — not yet supported */}
-          <button
-            type="button"
-            className="flex items-center gap-1 text-[11px] transition hover:text-red-500"
-            onClick={() => notifyError("Report doesn't supported yet.")}
-          >
-            <Flag className="h-3 w-3" strokeWidth={1.8} />
-            Report
-          </button>
+            Reply
+          </span>
 
           <span className="flex items-center gap-1.5" style={{ color: statusColor }}>
             <StatusIcon className="h-3.5 w-3.5" strokeWidth={1.8} />

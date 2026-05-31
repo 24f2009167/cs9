@@ -115,11 +115,13 @@ export async function allocateUnansweredQuestions() {
       // Notification to resolver
       await Notification.create({
         recipient_id: resolver.user_id,
-        type: 'AUTO_ASSIGNMENT',
-        message: `Question "${question.title}" has been auto-assigned to you. It was posted ${queuedDurationHrs} hours ago.`,
-        link: `/dashboard/query/${question.question_id}`,
-        is_read: false,
- })
+        type: 'account_status',
+        title: 'Question Auto-Assigned',
+        body: `Question "${question.title}" has been auto-assigned to you. It was posted ${queuedDurationHrs} hours ago.`,
+        reference_id: question.question_id,
+        reference_type: 'question',
+        link: `/query/${question.question_id}`,
+      })
 
       assignedResolverIds.add(resolver.user_id)
 

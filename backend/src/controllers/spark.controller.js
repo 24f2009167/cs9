@@ -88,20 +88,21 @@ export async function getLeaderboard(req, res, next) {
     }
 
     const roleUserIds = role ? await getUserIdsByRole(role) : null
-    const roleUserIdSet = roleUserIds ? new Set(roleUserIds) : null
     const userFilter = roleUserIds ? { user_id: { $in: roleUserIds } } : {}
     let leaderboard
 
     if (type === 'acceptedAnswers') {
+      const acceptedAnswersMatch = roleUserIds
+        ? { is_accepted: true, is_deleted: { $ne: true }, author_id: { $in: roleUserIds } }
+        : { is_accepted: true, is_deleted: { $ne: true } }
+
       const rows = await Answer.aggregate([
-        { $match: { is_accepted: true, is_deleted: { $ne: true } } },
+        { $match: acceptedAnswersMatch },
         { $group: { _id: '$author_id', score: { $sum: 1 } } },
         { $sort: { score: -1 } },
-        { $limit: limit * 3 },
+        { $limit: limit },
       ])
-      const candidateUserIds = roleUserIdSet
-        ? rows.map((row) => row._id).filter((userId) => roleUserIdSet.has(userId))
-        : rows.map((row) => row._id)
+      const candidateUserIds = rows.map((row) => row._id)
       const users = await User.find({
         user_id: { $in: candidateUserIds },
       }).lean()
@@ -117,10 +118,9 @@ export async function getLeaderboard(req, res, next) {
           score: row.score,
         }))
     } else if (type === 'reputation') {
-      const profiles = await UserProfile.find().sort({ reputation: -1 }).limit(limit * 3).lean()
-      const candidateUserIds = roleUserIdSet
-        ? profiles.map((profile) => profile.user_id).filter((userId) => roleUserIdSet.has(userId))
-        : profiles.map((profile) => profile.user_id)
+      const profileFilter = roleUserIds ? { user_id: { $in: roleUserIds } } : {}
+      const profiles = await UserProfile.find(profileFilter).sort({ reputation: -1 }).limit(limit).lean()
+      const candidateUserIds = profiles.map((profile) => profile.user_id)
       const users = await User.find({
         user_id: { $in: candidateUserIds },
       }).lean()

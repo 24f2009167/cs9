@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, CheckCircle2, Clock, HelpCircle, ChevronUp } from 'lucide-react'
 import QuestionCard from '../../components/QuestionCard/QuestionCard'
-import { fetchUserContributions, fetchQuestions, normalizeQuestion } from '../../service'
+import { fetchMyContributions, fetchQuestions, normalizeQuestion } from '../../service'
 import { notifyError } from '../../../../lib/notify'
 import useAuthStore from '../../../../store/useAuthStore'
 
@@ -39,7 +39,7 @@ function MyContributionsPage() {
   useEffect(() => {
     if (!user?.userId) return
     setLoading(true)
-    fetchUserContributions(user.userId, 50)
+    fetchMyContributions()
       .then(data => setContributions(data.contributions || []))
       .catch(() => notifyError('Could not load your contributions.'))
       .finally(() => setLoading(false))
