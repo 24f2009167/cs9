@@ -9,7 +9,7 @@ function Footer() {
           <h3 className="mb-2 font-display text-[14px] font-bold text-text-primary">
             {__PROJECT_NAME__ || 'Vicharanashala'}
           </h3>
-          <p className="max-w-xs text-[13px] leading-6 text-text-secondary">
+          <p className="max-w-xs text-justify text-[13px] leading-6 text-text-secondary">
             A collaborative platform for students to ask questions, share knowledge,
             and grow together through open contribution.
           </p>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MessageSquare, CheckCircle2, Clock, HelpCircle, ChevronUp, Award } from 'lucide-react'
+import { MessageSquare, CheckCircle2, Clock, HelpCircle, ChevronUp, Award, ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchMyContributions } from '../../service'
 import { notifyError } from '../../../../lib/notify'
 import useAuthStore from '../../../../store/useAuthStore'
@@ -19,30 +19,79 @@ const TABS = [
   { key: 'comments',  label: 'Comments' },
 ]
 
+const PAGE_SIZE = 10
+
+function countLabel(count, singular, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`
+}
+
+function displayStatus(status = '') {
+  const normalized = status.toLowerCase()
+  if (normalized === 'unanswered') return 'Active'
+  if (normalized === 'answered') return 'In Progress'
+  if (normalized === 'closed') return 'Resolved'
+  if (normalized === 'removed') return 'Removed'
+  if (normalized) return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+  return 'Unknown'
+}
+
+function statusClassName(status = '') {
+  const normalized = status.toLowerCase()
+  if (normalized === 'closed') return 'bg-success/10 text-success'
+  if (normalized === 'unanswered') return 'bg-brand/10 text-brand'
+  if (normalized === 'answered') return 'bg-info/10 text-info'
+  return 'bg-bg-tertiary text-text-muted'
+}
+
 function MyContributionsPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
   const [contributions, setContributions] = useState([])
+  const [summaryStats, setSummaryStats]   = useState(null)
   const [activeTab, setActiveTab]         = useState('all')
+  const [currentPage, setCurrentPage]     = useState(1)
   const [loading, setLoading]             = useState(true)
 
   useEffect(() => {
-    if (!user?.userId) return
+    if (!user?.userId) {
+      setContributions([])
+      setSummaryStats(null)
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     fetchMyContributions()
-      .then(data => setContributions(data.contributions || []))
-      .catch(() => notifyError('Could not load your contributions.'))
+      .then(data => {
+        setContributions(Array.isArray(data.contributions) ? data.contributions : [])
+        setSummaryStats(data.stats || null)
+      })
+      .catch(() => {
+        setContributions([])
+        setSummaryStats(null)
+        notifyError('Could not load your contributions.')
+      })
       .finally(() => setLoading(false))
   }, [user?.userId])
 
   // ── Derived stats + filtered list ────────────────────────────────────────
-  const stats = useMemo(() => ({
-    question: contributions.filter(c => c.type === 'question').length,
-    answer:   contributions.filter(c => c.type === 'answer').length,
-    comment:  contributions.filter(c => c.type === 'comment').length,
-    accepted: contributions.filter(c => c.type === 'answer' && c.isAccepted).length,
-  }), [contributions])
+  const stats = useMemo(() => {
+    const derived = {
+      question: contributions.filter(c => c.type === 'question').length,
+      answer:   contributions.filter(c => c.type === 'answer').length,
+      comment:  contributions.filter(c => c.type === 'comment').length,
+      accepted: contributions.filter(c => c.type === 'answer' && c.isAccepted).length,
+    }
+
+    return {
+      question: Number(summaryStats?.question ?? derived.question),
+      answer:   Number(summaryStats?.answer ?? derived.answer),
+      comment:  Number(summaryStats?.comment ?? derived.comment),
+      accepted: Number(summaryStats?.accepted ?? derived.accepted),
+      total:    Number(summaryStats?.total ?? contributions.length),
+    }
+  }, [contributions, summaryStats])
 
   const STAT_CARDS = [
     { label: 'Questions', value: stats.question, Icon: HelpCircle,    color: '#8c6a40' },
@@ -58,6 +107,17 @@ function MyContributionsPage() {
     if (activeTab === 'comments')  return c.type === 'comment'
     return true
   })
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab])
+
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages))
+  }, [totalPages])
 
   // Always open the canonical query detail page.
   function openContribution(item) {
@@ -117,9 +177,9 @@ function MyContributionsPage() {
           <button
             type="button"
             onClick={() => navigate('/raise-query')}
-            className="rounded-lg bg-brand px-6 py-2.5 text-[13px] font-semibold text-white transition hover:bg-brand-hover"
+            className="inline-flex items-center justify-center rounded-lg bg-brand px-6 py-2.5 font-semibold text-white transition hover:bg-brand-hover"
           >
-            Raise a Query
+            <span className="!text-[10px] leading-none">Raise a Query</span>
           </button>
         </div>
       ) : (
@@ -128,7 +188,7 @@ function MyContributionsPage() {
           <div className="mb-6 flex gap-1 rounded-xl bg-bg-tertiary p-1">
             {TABS.map(tab => {
               const count =
-                tab.key === 'all' ? contributions.length
+                tab.key === 'all' ? stats.total
                 : tab.key === 'questions' ? stats.question
                 : tab.key === 'answers' ? stats.answer
                 : stats.comment
@@ -162,7 +222,7 @@ function MyContributionsPage() {
                 No {activeTab} to show.
               </p>
             ) : (
-              filtered.map(item => {
+              paginated.map(item => {
                 const { icon: Icon, label, color } = TYPE_META[item.type] ?? TYPE_META.question
                 return (
                   <div
@@ -212,10 +272,33 @@ function MyContributionsPage() {
 
                       {/* Footer meta */}
                       <div className="mt-2 flex items-center gap-4 text-[11px] text-text-muted">
-                        {item.score > 0 && (
+                        {item.type === 'question' && (
+                          <>
+                            <span className="flex items-center gap-1 font-medium">
+                              <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
+                              {countLabel(item.answerCount || 0, 'answer')}
+                            </span>
+                            <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${statusClassName(item.status)}`}>
+                              {displayStatus(item.status)}
+                            </span>
+                          </>
+                        )}
+                        {item.type === 'answer' && (
+                          <>
+                            <span className="flex items-center gap-1 font-medium">
+                              <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} />
+                              {countLabel(item.score || 0, 'upvote')}
+                            </span>
+                            <span className="flex items-center gap-1 font-medium">
+                              <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
+                              {countLabel(item.commentCount || 0, 'reply', 'replies')}
+                            </span>
+                          </>
+                        )}
+                        {item.type === 'comment' && (
                           <span className="flex items-center gap-1 font-medium">
-                            <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} />
-                            {item.score} {item.score === 1 ? 'vote' : 'votes'}
+                            <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
+                            {countLabel(item.replyCount || 0, 'reply', 'replies')}
                           </span>
                         )}
                         {item.type !== 'question' && (
@@ -228,6 +311,32 @@ function MyContributionsPage() {
               })
             )}
           </div>
+
+          {filtered.length > PAGE_SIZE && (
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                aria-label="Previous contributions page"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-light text-text-muted transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-light disabled:hover:text-text-muted"
+              >
+                <ChevronLeft className="h-4 w-4" strokeWidth={1.8} />
+              </button>
+              <span className="text-[11px] font-medium text-text-muted">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                aria-label="Next contributions page"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-light text-text-muted transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-light disabled:hover:text-text-muted"
+              >
+                <ChevronRight className="h-4 w-4" strokeWidth={1.8} />
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

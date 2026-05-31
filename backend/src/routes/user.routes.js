@@ -23,9 +23,9 @@ const router = Router()
  *         description: ADMIN role required.
  */
 router.get('/', verifyToken, checkRole('ADMIN'), listUsers)
+router.get('/me/contributions', verifyToken, getMyContributions)
 router.get('/:userId', verifyToken, getUserById)
 router.get('/:userId/contributions', verifyToken, getUserContributions)
-router.get('/me/contributions', verifyToken, getMyContributions)
 router.patch('/:userId/status', verifyToken, checkRole('ADMIN'), updateUserStatus)
 
 export default router

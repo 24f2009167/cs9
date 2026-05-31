@@ -59,16 +59,16 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
           type="button"
           onClick={() => submit(parentId)}
           disabled={busy}
-          className="rounded-md bg-brand px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60"
+          className="rounded-md bg-brand px-3 py-1.5 font-semibold text-white transition hover:bg-brand-hover disabled:opacity-60"
         >
-          {busy ? '…' : 'Reply'}
+          <span className="!text-[10px] leading-none">{busy ? '…' : 'Reply'}</span>
         </button>
         <button
           type="button"
           onClick={() => setReplyTo(null)}
-          className="rounded-md px-3 py-1.5 text-[11px] font-medium text-text-muted transition hover:text-text-primary"
+          className="rounded-md px-3 py-1.5 font-medium text-text-muted transition hover:text-text-primary"
         >
-          Cancel
+          <span className="!text-[10px] leading-none">Cancel</span>
         </button>
       </div>
     </div>
@@ -104,9 +104,10 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
             <button
               type="button"
               onClick={() => openReply(c.comment_id)}
-              className="mt-1 flex items-center gap-1 text-[11px] font-medium text-text-muted transition hover:text-brand"
+              className="mt-1 flex items-center gap-1 font-medium text-text-muted transition hover:text-brand"
             >
-              <CornerDownRight className="h-3 w-3" strokeWidth={1.8} /> Reply
+              <CornerDownRight className="h-3 w-3" strokeWidth={1.8} />
+              <span className="!text-[10px] leading-none">Reply</span>
             </button>
           )}
           {replyTo === c.comment_id && replyBox(c.comment_id)}
@@ -138,10 +139,12 @@ function AnswerComments({ answerId, comments = [], currentUserId, locked = false
           <button
             type="button"
             onClick={() => openReply('root')}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted transition hover:text-brand"
+            className="flex items-center gap-1.5 font-semibold text-text-muted transition hover:text-brand"
           >
             <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.8} />
-            {topLevel.length > 0 ? 'Add a comment' : 'Comment'}
+            <span className="!text-[10px] leading-none">
+              {topLevel.length > 0 ? 'Add a comment' : 'Comment'}
+            </span>
           </button>
         )
       )}

@@ -88,13 +88,28 @@ export async function getLeaderboard(req, res, next) {
     }
 
     const roleUserIds = role ? await getUserIdsByRole(role) : null
-    const userFilter = roleUserIds ? { user_id: { $in: roleUserIds } } : {}
+    // Admins never appear on the public leaderboard. (An explicit role=ADMIN
+    // query is an internal lookup, so we don't exclude them in that case.)
+    const excludedUserIds = role === 'ADMIN' ? [] : await getUserIdsByRole('ADMIN')
+
+    // Build a user-id match that combines the optional role inclusion ($in)
+    // with the admin exclusion ($nin). Returns {} when neither applies.
+    const userIdMatch = (field) => {
+      const condition = {}
+      if (roleUserIds) condition.$in = roleUserIds
+      if (excludedUserIds.length) condition.$nin = excludedUserIds
+      return Object.keys(condition).length ? { [field]: condition } : {}
+    }
+
+    const userFilter = userIdMatch('user_id')
     let leaderboard
 
     if (type === 'acceptedAnswers') {
-      const acceptedAnswersMatch = roleUserIds
-        ? { is_accepted: true, is_deleted: { $ne: true }, author_id: { $in: roleUserIds } }
-        : { is_accepted: true, is_deleted: { $ne: true } }
+      const acceptedAnswersMatch = {
+        is_accepted: true,
+        is_deleted: { $ne: true },
+        ...userIdMatch('author_id'),
+      }
 
       const rows = await Answer.aggregate([
         { $match: acceptedAnswersMatch },
@@ -118,8 +133,7 @@ export async function getLeaderboard(req, res, next) {
           score: row.score,
         }))
     } else if (type === 'reputation') {
-      const profileFilter = roleUserIds ? { user_id: { $in: roleUserIds } } : {}
-      const profiles = await UserProfile.find(profileFilter).sort({ reputation: -1 }).limit(limit).lean()
+      const profiles = await UserProfile.find(userFilter).sort({ reputation: -1 }).limit(limit).lean()
       const candidateUserIds = profiles.map((profile) => profile.user_id)
       const users = await User.find({
         user_id: { $in: candidateUserIds },

@@ -258,7 +258,7 @@ function Landing() {
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">
               {__PROJECT_TAGLINE__}
             </span>
-          </a>
+          </button>
           <Button variant="secondary" className="text-[10px] bg-brand/80 text-white" onClick={handleHeaderButtonClick}>
             {currentUser ? 'Dashboard' : 'Login'}
           </Button>

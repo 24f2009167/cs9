@@ -1,5 +1,5 @@
 /* global __PROJECT_NAME__, __PROJECT_TAGLINE__ */
-import { LayoutGrid, MessageSquare, Trophy, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { LayoutGrid, MessageSquare, Trophy, PanelLeftClose, PanelLeft, Star } from 'lucide-react'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', Icon: LayoutGrid },
@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { label: 'Leaderboard', Icon: Trophy },
 ]
 
-function LeftPane({ isCollapsed, onToggleCollapse, sidebarNav, currentView, onNavigate }) {
+function LeftPane({ isCollapsed, onToggleCollapse, activeNav, onNavigate }) {
   return (
     <aside
       className={`relative flex shrink-0 flex-col border-r border-border bg-[#f8f9fa] pt-6 transition-all duration-300 dark:bg-bg-tertiary ${
@@ -19,14 +19,21 @@ function LeftPane({ isCollapsed, onToggleCollapse, sidebarNav, currentView, onNa
         type="button"
         className={`flex flex-col ${isCollapsed ? 'items-center px-2' : 'px-6'} pb-6 text-left transition hover:opacity-80`}
         onClick={() => onNavigate('Dashboard')}
+        title={isCollapsed ? (__PROJECT_NAME__ || 'Vicharanashala') : undefined}
       >
-        <h2 className="font-display text-[18px] font-bold leading-tight text-text-primary">
-          {__PROJECT_NAME__ || 'Vicharanashala'}
-        </h2>
-        {!isCollapsed && (
-          <p className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">
-            {__PROJECT_TAGLINE__ || 'Lab Internship Hub'}
-          </p>
+        {isCollapsed ? (
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg border-2 border-border bg-transparent text-text-secondary">
+            <Star className="h-4 w-4" strokeWidth={2.4} />
+          </span>
+        ) : (
+          <>
+            <h2 className="font-display text-[18px] font-bold leading-tight text-text-primary">
+              {__PROJECT_NAME__ || 'Vicharanashala'}
+            </h2>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">
+              {__PROJECT_TAGLINE__ || 'Lab Internship Hub'}
+            </p>
+          </>
         )}
       </button>
 
@@ -44,7 +51,7 @@ function LeftPane({ isCollapsed, onToggleCollapse, sidebarNav, currentView, onNa
         <span className="absolute bottom-2 left-5 top-2 w-px bg-bg-tertiary" aria-hidden="true" />
 
         {NAV_ITEMS.map(({ label, Icon }) => {
-          const isActive = sidebarNav === label && currentView === 'dashboard'
+          const isActive = activeNav === label
 
           return (
             <button

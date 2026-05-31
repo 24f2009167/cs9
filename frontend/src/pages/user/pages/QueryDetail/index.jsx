@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams, useOutletContext } from 'react-router-dom'
+import { useNavigate, useParams, useOutletContext, useLocation } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, Check, CheckCircle, RotateCcw, ChevronUp, ChevronDown,
   AlertTriangle, MessageCircle, Loader,
@@ -30,7 +30,9 @@ function fmtDate(d) {
 function QueryDetailPage() {
   const { queryId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useOutletContext()
+  const activeSidebarNav = location.state?.activeSidebarNav || ''
 
   const [data, setData]         = useState(null)   // { question, answers, comments }
   const [loading, setLoading]   = useState(true)
@@ -374,7 +376,9 @@ function QueryDetailPage() {
                     <button
                       type="button"
                       title={q.title}
-                      onClick={() => navigate(`/query/${q.question_id}`)}
+                      onClick={() => navigate(`/query/${q.question_id}`, {
+                        state: { activeSidebarNav },
+                      })}
                       className="flex w-full items-center gap-2 text-left transition hover:text-brand"
                     >
                       <MessageCircle className="h-3.5 w-3.5 shrink-0 text-text-muted" strokeWidth={1.8} />
