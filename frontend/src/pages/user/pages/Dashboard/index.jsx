@@ -20,7 +20,11 @@ function DashboardPage() {
   const [loadingContributions, setLoadingContributions] = useState(true)
 
   function handleCardClick(id) {
-    navigate(`/query/${id}`)
+    navigate(`/query/${id}`, {
+      state: {
+        activeSidebarNav: sidebarNav === 'My Queries' ? 'My Queries' : 'Dashboard',
+      },
+    })
   }
 
   // Top FAQ Categories filter — shares selectedTags with the header tag popover.

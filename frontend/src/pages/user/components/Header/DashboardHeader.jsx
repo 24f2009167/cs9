@@ -29,6 +29,7 @@ function DashboardHeader({
   initials,
   currentView,
   showRaiseQuery = true,
+  showSearch = true,
   notifications,
   unreadCount,
   isDark,
@@ -63,95 +64,98 @@ function DashboardHeader({
   return (
     <header className="relative flex items-center justify-between border-b border-border bg-[#f8f9fa] px-8 py-4 dark:bg-bg-card">
 
-      {/* Search bar */}
-      <div className="relative flex w-[420px] items-center gap-2 rounded-lg bg-bg-tertiary px-3 py-2 transition hover:bg-bg-tertiary">
-        <Search className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.8} />
+      <div className="min-w-0 flex-1">
+        {showSearch && (
+          <div className="relative flex w-[420px] items-center gap-2 rounded-lg bg-bg-tertiary px-3 py-2 transition hover:bg-bg-tertiary">
+            <Search className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.8} />
 
-        <input
-          type="text"
-          placeholder="Search FAQs, categories, or status…"
-          className="flex-1 bg-transparent text-[12px] text-text-primary placeholder-[#747878] outline-none"
-          onChange={e => onSearchOpen?.(e.target.value)}
-          onFocus={() => onSearchOpen?.('')}
-        />
+            <input
+              type="text"
+              placeholder="Search FAQs, categories, or status…"
+              className="flex-1 bg-transparent text-[12px] text-text-primary placeholder-[#747878] outline-none"
+              onChange={e => onSearchOpen?.(e.target.value)}
+              onFocus={() => onSearchOpen?.('')}
+            />
 
-        <span className="h-4 w-px bg-border" />
+            <span className="h-4 w-px bg-border" />
 
-        {/* Filter — tag popover */}
-        <Popover>
-          <PopoverButton className="relative flex shrink-0 items-center gap-1 text-text-muted transition hover:text-text-primary">
-            <SlidersHorizontal className="h-4 w-4" strokeWidth={1.8} />
-            {activeCount > 0 && (
-              <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-white">
-                {activeCount}
-              </span>
-            )}
-          </PopoverButton>
-
-          <div className="absolute left-0 top-full z-50 w-[280px]">
-            <PopoverPanel className="mt-1 overflow-hidden rounded-xl border border-border-light bg-bg-card/95 shadow-xl backdrop-blur-sm focus:outline-none">
-              {/* Header row */}
-              <div className="flex items-center justify-between border-b border-border-light px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-muted">
-                    Categories
-                  </span>
-                  {activeCount > 0 && (
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand/12 text-[10px] font-semibold text-brand">
-                      {activeCount}
-                    </span>
-                  )}
-                </div>
+            {/* Filter — tag popover */}
+            <Popover className="relative">
+              <PopoverButton className="relative flex shrink-0 items-center gap-1 text-text-muted transition hover:text-text-primary">
+                <SlidersHorizontal className="h-4 w-4" strokeWidth={1.8} />
                 {activeCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAll}
-                    className="text-[11px] font-medium text-brand underline-offset-2 transition hover:underline"
-                  >
-                    Clear
-                  </button>
+                  <span className="absolute -right-1.5 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-white">
+                    {activeCount}
+                  </span>
                 )}
-              </div>
+              </PopoverButton>
 
-              {/* Tag list */}
-              <div className="flex flex-wrap gap-2 p-3">
-                {tags.length === 0 ? (
-                  <p className="py-2 text-[12px] text-text-muted">No categories yet.</p>
-                ) : (
-                  tags.map(({ tag, count }) => {
-                    const { color, bg } = styleForTag(tag)
-                    const isSelected = localTags.includes(tag)
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-[12px] font-medium transition hover:-translate-y-0.5 hover:shadow-sm ${
-                          isSelected
-                            ? 'border-brand bg-brand/5 text-brand'
-                            : 'border-border-light text-text-secondary hover:border-brand hover:text-brand'
-                        }`}
-                      >
-                        <span
-                          className="flex h-5 w-5 items-center justify-center rounded"
-                          style={{ background: bg }}
-                        >
-                          <Tag className="h-3 w-3" strokeWidth={2} style={{ color }} />
+              <div className="absolute right-0 top-full z-50 w-[240px]">
+                <PopoverPanel className="mt-2 overflow-hidden rounded-xl border border-border-light bg-bg-card/60 shadow-xl backdrop-blur-sm focus:outline-none">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between border-b border-border-light px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                        Categories
+                      </span>
+                      {activeCount > 0 && (
+                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-brand/12 text-[9px] font-semibold text-brand">
+                          {activeCount}
                         </span>
-                        {tag}
-                        {count != null && (
-                          <span className={`text-[10px] ${isSelected ? 'text-brand/70' : 'text-text-muted'}`}>
-                            {count}
-                          </span>
-                        )}
+                      )}
+                    </div>
+                    {activeCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearAll}
+                        className="text-[10px] font-medium text-brand underline-offset-2 transition hover:underline"
+                      >
+                        Clear
                       </button>
-                    )
-                  })
-                )}
+                    )}
+                  </div>
+
+                  {/* Tag list */}
+                  <div className="flex flex-wrap gap-1.5 p-2.5">
+                    {tags.length === 0 ? (
+                      <p className="py-2 text-[11px] text-text-muted">No categories yet.</p>
+                    ) : (
+                      tags.map(({ tag, count }) => {
+                        const { color, bg } = styleForTag(tag)
+                        const isSelected = localTags.includes(tag)
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => toggleTag(tag)}
+                            className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-left font-medium transition hover:-translate-y-0.5 hover:shadow-sm ${
+                              isSelected
+                                ? 'border-brand bg-brand/5 text-brand'
+                                : 'border-border-light text-text-secondary hover:border-brand hover:text-brand'
+                            }`}
+                          >
+                            <span
+                              className="flex h-4 w-4 items-center justify-center rounded"
+                              style={{ background: bg }}
+                            >
+                              <Tag className="h-2.5 w-2.5" strokeWidth={2} style={{ color }} />
+                            </span>
+                            <span className="!text-[10px] leading-none">{tag}</span>
+                            {count != null && (
+                              <span className={`!text-[8px] leading-none ${isSelected ? 'text-brand/70' : 'text-text-muted'}`}>
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </PopoverPanel>
               </div>
-            </PopoverPanel>
+            </Popover>
           </div>
-        </Popover>
+        )}
       </div>
 
       {/* Right-side action group */}
@@ -159,10 +163,11 @@ function DashboardHeader({
         {showRaiseQuery && (
           <Button
             variant="secondary"
-            className="gap-1.5 rounded-lg border-transparent bg-brand/80 px-3 py-1.5 text-[8px] font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-brand-hover"
+            className="min-h-7 gap-1 rounded-lg border-transparent bg-brand/80 px-2.5 py-1 font-bold uppercase tracking-wide text-white hover:border-transparent hover:bg-brand-hover"
             onClick={onRaiseQuery}
           >
-            <PlusCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Raise New Query
+            <PlusCircle className="h-3 w-3" strokeWidth={1.8} />
+            <span className="text-[10px] leading-none">Raise New Query</span>
           </Button>
         )}
 
