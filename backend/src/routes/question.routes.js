@@ -13,6 +13,7 @@ import {
   voteQuestion,
 } from '../controllers/question.controller.js'
 import { checkRole, verifyToken } from '../middleware/authMiddleware.js'
+import { questionCreationLimiter } from '../middleware/rateLimit.middleware.js'
 
 const router = Router()
 
@@ -75,7 +76,7 @@ router.use(verifyToken)
  *       403:
  *         description: Forbidden
  */
-router.post('/', checkRole('USER', 'RESOLVER', 'ADMIN'), createQuestion)
+router.post('/', questionCreationLimiter, checkRole('USER', 'RESOLVER', 'ADMIN'), createQuestion)
 
 /**
  * @openapi
@@ -106,7 +107,7 @@ router.post('/', checkRole('USER', 'RESOLVER', 'ADMIN'), createQuestion)
  *         name: status
  *         schema:
  *           type: string
- *           enum: [open, unanswered, answered, closed, removed]
+ *           enum: [open, resolved, unanswered, answered, closed, removed]
  *         example: open
  *       - in: query
  *         name: sort

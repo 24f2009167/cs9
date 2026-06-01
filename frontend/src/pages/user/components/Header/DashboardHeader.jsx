@@ -27,7 +27,6 @@ function styleForTag(tag) {
 function DashboardHeader({
   user,
   initials,
-  currentView,
   showRaiseQuery = true,
   showSearch = true,
   notifications,

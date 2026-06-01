@@ -62,12 +62,6 @@ const questionSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Stripped, search-friendly version of body. Populate in a pre-save hook.
-    body_plain: {
-      type: String,
-      default: '',
-    },
-
     tags: [String],
 
     spark_bounty: {
@@ -193,10 +187,18 @@ questionSchema.index({ created_at: -1 })
 questionSchema.index({ upvotes: -1 })
 questionSchema.index({ kind: 1, status: 1, last_activity_at: -1 })
 
-// Text search index. body_plain has a lower weight than title/tags for ranking.
+// Text search index.
 questionSchema.index(
-  { title: 'text', body_plain: 'text', tags: 'text' },
-  { weights: { title: 10, tags: 5, body_plain: 1 }, name: 'question_text_idx' },
+  { title: 'text', body: 'text', tags: 'text' },
+  { weights: { title: 10, tags: 5, body: 1 }, name: 'question_text_idx' },
 )
+
+// Normalize body whitespace before saving.
+questionSchema.pre('save', function (next) {
+  if (this.isModified('body')) {
+    this.body = this.body.replace(/\s+/g, ' ').trim()
+  }
+  next()
+})
 
 export default mongoose.model('Question', questionSchema)

@@ -4,7 +4,7 @@ import { Link as LinkIcon } from 'lucide-react'
 import QuestionCard from '../../components/QuestionCard/QuestionCard'
 import FAQCategories from '../../components/FAQCategories/FAQCategories'
 import Button from '../../../../components/Button/Button'
-import { fetchQuestions, fetchQuestionTags, fetchUserContributions, voteQuestion, normalizeQuestion } from '../../service'
+import { fetchQuestions, fetchUserContributions, voteQuestion, normalizeQuestion } from '../../service'
 import { queryClient } from '../../../../lib/queryClient'
 import { notifyError } from '../../../../lib/notify'
 

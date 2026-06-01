@@ -1,16 +1,42 @@
-# React + Vite
+# Rogāre — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + Vite + Tailwind CSS v4. SPA for the Rogāre Q&A platform.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| | |
+|---|---|
+| Framework | React 19 (`^19.2.6`) |
+| Build | Vite (`^8.0.12`) |
+| Styling | Tailwind CSS v4 (CSS variables, `dark:` variant) |
+| Routing | React Router DOM (`^7.16.0`) |
+| State | Zustand (`^5.0.14`) + React Query (`@tanstack/react-query`) |
+| Icons | lucide-react (`^1.17.0`) |
+| HTTP | Axios (`^1.16.1`) |
+| UI Primitives | Headless UI (`@headlessui/react` `^2.2.10`) |
+| Charts | Recharts (`^3.8.1`) |
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```sh
+npm run dev      # development server with HMR
+npm run build    # production build
+npm run lint     # ESLint
+npm run preview  # preview production build locally
+```
 
-## Expanding the ESLint configuration
+## Architecture
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+See [`CONTEXT.md`](../CONTEXT.md) for component patterns, state ownership, routing, and import depth.
+
+See [`DESIGN.md`](./DESIGN.md) for the design system — color tokens, typography, shared component specs.
+
+## Environment
+
+Create a `.env` file at the project root:
+
+```env
+VITE_API_BASE_URL=http://localhost:3001/api
+```
+
+The frontend proxies `/api` to the backend in development via `vite.config.js`.

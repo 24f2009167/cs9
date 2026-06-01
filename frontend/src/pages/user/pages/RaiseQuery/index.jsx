@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Field, Label, Textarea, Switch } from '@headlessui/react'
 import { CheckCircle2, Lightbulb, EyeOff, Image as ImageIcon, ExternalLink, Sparkles, Send } from 'lucide-react'
-import Button from '../../../../components/Button/Button'
 import Input from '../../../../components/Input/Input'
 import Select from '../../../../components/Select/Select'
 import { createQuestion, fetchQuestionTags } from '../../service'
@@ -42,12 +41,13 @@ function RaiseQueryPage() {
   useEffect(() => {
     fetchQuestionTags()
       .then(tags =>
-        setCategories(
-          (tags || []).map(t => ({
+        setCategories([
+          ...(tags || []).map(t => ({
             value: t.tag,
             label: t.tag.charAt(0).toUpperCase() + t.tag.slice(1),
           })),
-        ),
+          { value: 'others', label: 'Others' },
+        ]),
       )
       .catch(() => setCategories([]))
   }, [])

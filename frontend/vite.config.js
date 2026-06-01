@@ -4,8 +4,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:5000'
+const configDir = path.dirname(fileURLToPath(import.meta.url))
 
 // Single source of truth for project metadata lives in ../project.yml.
 // Parsed here (simple flat `key: "value"` file) and exposed to the app as
@@ -13,7 +15,7 @@ const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:50
 function readProjectConfig() {
   const config = {}
   try {
-    const raw = readFileSync(path.resolve(__dirname, '../project.yml'), 'utf8')
+    const raw = readFileSync(path.resolve(configDir, '../project.yml'), 'utf8')
     for (const line of raw.split('\n')) {
       const match = line.match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*)$/)
       if (match) {
@@ -38,7 +40,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(configDir, './src'),
     },
   },
   server: {

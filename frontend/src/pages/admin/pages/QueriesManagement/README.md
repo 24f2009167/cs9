@@ -1,42 +1,59 @@
 # Queries Management
 
-Admin view for browsing and searching recent platform questions. Filters are applied client-side from the shared `dashboardData.recent.questions` feed.
+Admin view for browsing **all** platform questions (every kind and status), with
+server-side search and pagination. Each query renders as a detail-rich card.
+
+- **Component:** [`index.jsx`](./index.jsx) — `QueriesManagementView`
+- **Rendered by:** [`pages/admin/index.jsx`](../../index.jsx) when
+  `currentAdminView === 'queriesManagement'`.
 
 ## Props
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `dashboardData` | `object\|null` | Same object as `Dashboard` — accessed via `.recent.questions` |
-| `searchQuery` | `string` | Passed from `AdminHeader` search bar — pre-populated when user submits a search |
+| `searchQuery` | `string` | Live value from the `AdminHeader` search bar |
 
-## Search / Filtering
+> No longer reads `dashboardData` — it fetches its own data so it can page through
+> the full question set rather than only the dashboard's "recent" slice.
 
-Queries are filtered client-side against `${title kind status}` (space-joined, lowercased):
+## Data source
 
 ```ts
-visibleQueries = queries.filter(q =>
-  `${q.title || ''} ${q.kind || ''} ${q.status || ''}`
-    .toLowerCase().includes(searchQuery.toLowerCase())
-)
+fetchAdminQuestions({ page, limit: 10, search })
+  → GET /api/questions?page=&limit=10&sort=latest&search=
+  → { questions, pagination: { page, pages, total, limit } }
 ```
 
-When `searchQuery` is empty, all `recent.questions` are shown.
+Admins receive **every** question from `listQuestions` (moderation/`removed`
+filters are bypassed via `isAdmin`); `author_name` is resolved server-side.
+Service: [`pages/admin/service.js`](../../service.js).
 
-## Table Columns
+## Pagination (frontend + backend)
 
-| Column | Source field | Notes |
-|--------|-------------|-------|
-| ID | `question_id` | Truncated to 8 chars with `#` prefix |
-| Title | `title` | Truncated with ellipsis, max-w 420px |
-| Kind | `kind` | Badge: `community` or `faq`, uppercase |
-| Status | `status` | Capitalized plain text |
-| Author | `author_id` | Truncated to 8 chars |
+- **Backend** paginates via `page`/`limit` and returns `pagination` (`paginationResult`).
+- **Frontend** holds `page` state and renders Prev/Next + `page / pages`. Changing
+  page refetches that slice from the server (true server-side paging — not a
+  client slice). `PAGE_SIZE = 10`.
 
-## Interactions
+## Search
 
-- **Filter button** — present but not wired (placeholder for future filter panel)
-- Clicking rows — no action currently wired (future: could navigate to question detail)
+The header `searchQuery` is **debounced (300ms)** and sent as the `search` query
+param, so matching runs server-side across all questions (title/body/answers).
+Page resets to 1 on a new term.
 
-## Empty State
+## Card details
 
-"No recent queries match this view." shown when `visibleQueries.length === 0`.
+Each card surfaces as much as the model exposes:
+
+- **Badges:** short `#id`, `kind` (community/faq), `status`, non-approved
+  `moderation_status`, `is_pinned`, `is_locked`, `has_expert_answer`, `spark_bounty`
+- **Content:** `title` + a 2-line preview (`body_plain`, falling back to stripped `body`)
+- **Tags:** `tags` chips
+- **Meta/stats:** author (`author_name`, or *Anonymous*), `upvotes`, `answer_count`,
+  `view_count`, `assigned_to`, `created_at`, and `last_activity_at` when it differs
+
+## States
+
+- **Loading** — "Loading queries…"
+- **Empty** — "No queries yet." or "No queries match …" when searching.
+</content>

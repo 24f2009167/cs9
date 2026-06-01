@@ -125,6 +125,6 @@ Response shape per item:
 ```
 pages/user/pages/MyContributions/
 ├── index.jsx      ← page component (current stub)
-├── plan.md        ← this file
+├── PLAN.md        ← this file
 └── README.md      ← (todo: add when page is fully implemented)
 ```

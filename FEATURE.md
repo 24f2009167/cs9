@@ -13,7 +13,7 @@ Files created:
 - `backend/.gitignore` (updated)
 - `backend/src/models/question.model.js` (updated — `assigned_to` field added)
 - `backend/src/server.js` (updated — cron started on startup)
-- `feature.md` (this file)
+- `FEATURE.md` (this file)
 
 ---
 
@@ -144,7 +144,7 @@ startQuestionAssignmentCron()
 | 4 | `src/scheduled/question-assignment.js` | **NEW** — cron job definition |
 | 5 | `src/server.js` | Import and start the cron on startup |
 | 6 | `backend/logs/` | Create logs directory (gitignored) |
-| 7 | `backend/feature.md` | This file (root) |
+| 7 | `backend/FEATURE.md` | This file (root) |
 
 ---
 
@@ -209,5 +209,5 @@ backend/
 │   │   └── question-assignment.js             ← NEW
 │   └── services/
 │       └── question-allocation.service.js      ← NEW
-└── feature.md              ← this file
+└── FEATURE.md              ← this file
 ```

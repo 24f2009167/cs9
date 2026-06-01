@@ -48,12 +48,12 @@ function Modal({
   return (
     <Dialog open={isOpen} onClose={onClose} aria-label={title} className="relative z-[1000]">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/10" aria-hidden="true" />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" aria-hidden="true" />
 
       {/* Centered panel */}
       <div className="fixed inset-0 flex items-center justify-center px-4">
         <DialogPanel
-          className={`relative w-full max-w-[440px] rounded-lg bg-bg-card p-8 shadow-2xl sm:p-12 ${panelClassName}`}
+          className={`relative w-full max-w-[440px] rounded-xl bg-bg-card/90 backdrop-blur-sm p-8 shadow-2xl ring-1 ring-black/5 sm:p-12 ${panelClassName}`}
         >
           <button
             aria-label="Close dialog"

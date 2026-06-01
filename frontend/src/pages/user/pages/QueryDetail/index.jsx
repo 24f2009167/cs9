@@ -34,13 +34,13 @@ function QueryDetailPage() {
   const { user } = useOutletContext()
   const activeSidebarNav = location.state?.activeSidebarNav || ''
 
-  const [data, setData]         = useState(null)   // { question, answers, comments }
-  const [loading, setLoading]   = useState(true)
-  const [reply, setReply]       = useState('')
-  const [posting, setPosting]   = useState(false)
+  const [data, setData] = useState(null)   // { question, answers, comments }
+  const [loading, setLoading] = useState(true)
+  const [reply, setReply] = useState('')
+  const [posting, setPosting] = useState(false)
   const [reportTarget, setReportTarget] = useState(null) // { type, id }
   const [reporting, setReporting] = useState(false)
-  const [related, setRelated]   = useState([])     // latest queries sharing tags
+  const [related, setRelated] = useState([])     // latest queries sharing tags
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -50,6 +50,16 @@ function QueryDetailPage() {
       setData(null)
     } finally {
       setLoading(false)
+    }
+  }, [queryId])
+
+  // Silent re-fetch — updates the thread in place WITHOUT toggling `loading`,
+  // so actions like voting/commenting don't blank the page (no reload flash).
+  const refresh = useCallback(async () => {
+    try {
+      setData(await fetchQuestionDetail(queryId))
+    } catch {
+      // Keep the current view if the refresh fails.
     }
   }, [queryId])
 
@@ -72,7 +82,7 @@ function QueryDetailPage() {
   async function handleVote(answerId, vote) {
     try {
       await voteAnswer(answerId, vote)
-      await load()
+      await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not register your vote.')
     }
@@ -81,7 +91,7 @@ function QueryDetailPage() {
   async function handleComment(answerId, body, parentId) {
     try {
       await postComment(answerId, body, parentId)
-      await load()
+      await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not post comment.')
     }
@@ -91,7 +101,7 @@ function QueryDetailPage() {
     try {
       await resolveQuestion(queryId, resolved)
       notifySuccess(resolved ? 'Question marked as solved.' : 'Question reopened.')
-      await load()
+      await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not update the question.')
     }
@@ -101,7 +111,7 @@ function QueryDetailPage() {
     try {
       await acceptAnswer(queryId, answerId)
       notifySuccess('Marked as the resolution. Question resolved.')
-      await load()
+      await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not mark resolution.')
     }
@@ -121,7 +131,7 @@ function QueryDetailPage() {
       await postAnswer(queryId, reply.trim())
       setReply('')
       notifySuccess('Your reply has been posted.')
-      await load()
+      await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not post your reply.')
     } finally {
@@ -225,9 +235,8 @@ function QueryDetailPage() {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-4 text-[13px] text-text-secondary">
-              <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold ${
-                isResolved ? 'bg-success/10 text-success' : 'bg-brand/10 text-brand'
-              }`}>
+              <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-bold ${isResolved ? 'bg-success/10 text-success' : 'bg-brand/10 text-brand'
+                }`}>
                 <CheckCircle2 className="h-4 w-4" strokeWidth={1.8} /> {statusLabel}
               </span>
               <span className="flex items-center gap-1.5">
@@ -349,9 +358,8 @@ function QueryDetailPage() {
               {steps.map((s, i) => (
                 <div key={i} className={`relative ${i < steps.length - 1 ? 'mb-6' : ''}`}>
                   <div
-                    className={`absolute -left-5 top-0 flex h-5 w-5 items-center justify-center rounded-full text-white ${
-                      s.done ? (s.green ? 'bg-success' : 'bg-brand') : 'bg-bg-tertiary'
-                    }`}
+                    className={`absolute -left-5 top-0 flex h-5 w-5 items-center justify-center rounded-full text-white ${s.done ? (s.green ? 'bg-success' : 'bg-brand') : 'bg-bg-tertiary'
+                      }`}
                   >
                     <Check className="h-3 w-3" strokeWidth={3} />
                   </div>

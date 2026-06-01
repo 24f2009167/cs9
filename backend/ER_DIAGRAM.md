@@ -101,8 +101,7 @@ erDiagram
         string kind "faq|community"
         string title
         string slug UK "sparse"
-        string body
-        string body_plain
+        string body "normalized on save via pre('save') hook"
         array  tags
         number spark_bounty
         string author_id FK
@@ -135,7 +134,6 @@ erDiagram
         string author_id FK
         string author_role
         string body
-        string body_plain
         array  references "{url,label}"
         array  attachments "{file_url,file_name,mime_type}"
         boolean is_expert
@@ -217,7 +215,7 @@ erDiagram
         string notification_id PK
         string recipient_id FK "user_id"
         string actor_id FK "user_id"
-        string type "answer|upvote|badge|mention|accepted|flag_resolved|comment|reply|warning|account_status"
+        string type "answer|upvote|badge|mention|accepted|flag_resolved|content_hidden|comment|reply|warning|account_status"
         string title
         string body
         string reference_id "polymorphic"

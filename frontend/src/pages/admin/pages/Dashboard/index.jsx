@@ -4,17 +4,19 @@ import {
   ClipboardList,
   Clock,
   Download,
-  Filter,
-  MessageSquare,
+  ShieldAlert,
   RefreshCw,
+  SlidersHorizontal,
   TrendingDown,
   TrendingUp,
-  UserPlus,
 } from 'lucide-react'
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -22,24 +24,16 @@ import {
 } from 'recharts'
 import Button from '../../../../components/Button/Button'
 
-// Placeholder until GET /api/admin/dashboard returns metrics.charts.categories.
-// Expected shape: [{ category: string, new: number, resolved: number }]
-const PLACEHOLDER_CATEGORIES = [
-  { category: 'Academic', new: 66, resolved: 42 },
-  { category: 'NOC', new: 48, resolved: 72 },
-  { category: 'VIBE', new: 82, resolved: 54 },
-  { category: 'Stipend', new: 40, resolved: 62 },
-  { category: 'Offer', new: 76, resolved: 88 },
-  { category: 'Other', new: 58, resolved: 36 },
-]
-
 function formatNumber(value) {
   return new Intl.NumberFormat('en-IN').format(value || 0)
 }
 
-function MetricCard({ title, value, Icon, iconClassName, trend, trendType = 'up', badge }) {
+function MetricCard({ title, value, Icon, iconClassName, trend, trendType = 'up', badge, onClick }) {
   return (
-    <div className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
+    <div
+      onClick={onClick}
+      className={`rounded-lg border border-border-light bg-bg-card p-5 shadow-sm ${onClick ? 'cursor-pointer transition hover:border-brand hover:shadow-md' : ''}`}
+    >
       <div className="mb-5 flex items-start justify-between">
         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconClassName}`}>
           <Icon className="h-5 w-5" strokeWidth={1.8} />
@@ -69,66 +63,16 @@ function MetricCard({ title, value, Icon, iconClassName, trend, trendType = 'up'
   )
 }
 
-function ActivityItem({ icon: Icon, title, meta, tone = 'neutral' }) {
-  const toneClass =
-    tone === 'blue'
-      ? 'bg-blue-100 text-blue-700'
-      : tone === 'amber'
-        ? 'bg-amber-100 text-amber-700'
-        : tone === 'red'
-          ? 'bg-red-100 text-red-700'
-          : 'bg-bg-primary text-text-muted'
 
-  return (
-    <div className="flex gap-3">
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${toneClass}`}>
-        <Icon className="h-4 w-4" strokeWidth={1.8} />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold text-text-primary">{title}</p>
-        <p className="mt-1 text-[11px] text-text-muted">{meta}</p>
-      </div>
-    </div>
-  )
-}
-
-function DashboardView({ dashboardData, isLoading, onRefresh }) {
+function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
   const metrics = dashboardData?.metrics || {}
   const recent = dashboardData?.recent || {}
   const questionMetrics = metrics.questions || {}
   const usersMetrics = metrics.users || {}
   const flagsMetrics = metrics.flags || {}
-  const recentQuestions = recent.questions || []
-  const recentUsers = recent.users || []
   const recentFlags = recent.flags || []
-  // Real data once the backend aggregation exists; placeholder until then.
-  const categoryData = dashboardData?.charts?.categories?.length
-    ? dashboardData.charts.categories
-    : PLACEHOLDER_CATEGORIES
+  const categoryData = dashboardData?.charts?.categories || []
   const attentionRows = recentFlags.slice(0, 5)
-  const activityItems = [
-    ...recentQuestions.slice(0, 2).map((question) => ({
-      id: `question-${question.question_id}`,
-      icon: MessageSquare,
-      title: `Question ${question.question_id?.slice(0, 8) || ''} needs review`,
-      meta: `${question.kind || 'community'} | ${question.status || 'open'}`,
-      tone: question.status === 'removed' ? 'red' : 'blue',
-    })),
-    ...recentUsers.slice(0, 2).map((user) => ({
-      id: `user-${user.user_id}`,
-      icon: UserPlus,
-      title: `${user.name || 'New user'} joined`,
-      meta: user.email || 'Recently created account',
-      tone: 'amber',
-    })),
-    ...recentFlags.slice(0, 2).map((flag) => ({
-      id: `flag-${flag.flag_id}`,
-      icon: AlertCircle,
-      title: `Flag opened for ${flag.target_type || 'content'}`,
-      meta: flag.reason || flag.status || 'Pending moderation',
-      tone: 'red',
-    })),
-  ]
 
   return (
     <div className="flex-1 overflow-y-auto p-5 lg:p-8">
@@ -165,6 +109,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
           Icon={ClipboardList}
           iconClassName="bg-blue-50 text-blue-700"
           trend={`${formatNumber(questionMetrics.total)} total`}
+          onClick={() => onNavigate('queriesManagement')}
         />
         <MetricCard
           title="FAQ Entries"
@@ -172,6 +117,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
           Icon={CheckCircle}
           iconClassName="bg-amber-50 text-amber-700"
           trend="Published"
+          onClick={() => onNavigate('faqManagement')}
         />
         <MetricCard
           title="Answers"
@@ -187,10 +133,11 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
           Icon={AlertCircle}
           iconClassName="bg-red-50 text-red-600"
           badge={flagsMetrics.open > 0 ? 'URGENT' : 'CLEAR'}
+          onClick={onNavigate ? () => onNavigate('flagModeration') : undefined}
         />
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+      <div className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
         <section className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-[17px] font-bold text-text-primary">Query Volume by Category</h2>
@@ -238,22 +185,80 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
         </section>
 
         <section className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
-          <h2 className="mb-6 text-[17px] font-bold text-text-primary">Resolver Activity</h2>
-          <div className="flex flex-col gap-5">
-            {activityItems.length === 0 ? (
-              <p className="text-[13px] text-text-muted">No recent platform activity.</p>
-            ) : (
-              activityItems.map((item) => <ActivityItem key={item.id} {...item} />)
-            )}
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-[17px] font-bold text-text-primary">Last 24hrs Traffic</h2>
+            <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
+              <Clock className="h-3 w-3" strokeWidth={1.8} />
+              <span>Hourly</span>
+            </div>
           </div>
-          <button
-            type="button"
-            className="mt-6 w-full border-t border-border-light pt-4 text-center text-[13px] font-semibold text-blue-700 transition hover:text-blue-900"
-          >
-            View all activity
-          </button>
+          <div className="h-[260px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={dashboardData?.last24h || []}
+                margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis
+                  dataKey="hour"
+                  tick={{ fontSize: 9, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#e5e7eb' }}
+                  tickFormatter={val => val.split(' ')[1]?.slice(0, 5) || val}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={28}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
+                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
+                  labelStyle={{ fontWeight: 700, color: '#111827' }}
+                  labelFormatter={val => val}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
+                  iconType="circle"
+                  iconSize={8}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="questions"
+                  name="Questions"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="answers"
+                  name="Answers"
+                  stroke="#059669"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="comments"
+                  name="Comments"
+                  stroke="#d97706"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </section>
+
       </div>
+
 
       <section className="overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border-light px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -265,10 +270,11 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
           </div>
           <button
             type="button"
-            className="flex items-center gap-2 text-[12px] font-semibold text-text-muted transition hover:text-text-primary"
+            onClick={() => onNavigate?.('flagModeration')}
+            className="flex items-center gap-2 text-[12px] font-semibold text-brand transition hover:text-brand-hover"
           >
-            <Filter className="h-4 w-4" strokeWidth={1.8} />
-            Filter
+            <ShieldAlert className="h-4 w-4" strokeWidth={1.8} />
+            Review flags
           </button>
         </div>
 
@@ -318,7 +324,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
         </div>
       </section>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-border-light bg-bg-card p-4">
           <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">Users</p>
           <p className="mt-2 text-[22px] font-semibold text-text-primary">
@@ -341,6 +347,25 @@ function DashboardView({ dashboardData, isLoading, onRefresh }) {
             {formatNumber(metrics.sparks?.total)}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => onNavigate?.('settings')}
+          className="rounded-lg border border-border-light bg-bg-card p-4 text-left transition hover:border-brand hover:shadow-md"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">
+                Settings
+              </p>
+              <p className="mt-2 text-[13px] font-semibold text-text-primary">
+                Scoring & thresholds
+              </p>
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+              <SlidersHorizontal className="h-4 w-4" strokeWidth={1.8} />
+            </div>
+          </div>
+        </button>
       </div>
     </div>
   )

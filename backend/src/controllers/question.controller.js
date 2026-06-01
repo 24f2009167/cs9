@@ -109,8 +109,29 @@ function isAdmin(req) {
   return req.user.roles.includes('ADMIN')
 }
 
+/**
+ * Returns real User.name for each user ID, bypassing any UserProfile display_name
+ * overrides. Admins always see real names, never "Anonymous".
+ */
+async function getRealNameByUserId(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))]
+  if (!ids.length) return {}
+  const users = await User.find({ user_id: { $in: ids } }).select('user_id name').lean()
+  return Object.fromEntries(users.map((u) => [u.user_id, u.name || 'Unknown']))
+}
+
 function canManage(req, question) {
   return isAdmin(req) || question.author_id === req.user.userId
+}
+
+export function getQuestionStatusFilter(status) {
+  if (status === 'open') {
+    return { $in: ['unanswered', 'answered'] }
+  }
+  if (status === 'resolved') {
+    return 'closed'
+  }
+  return status || undefined
 }
 
 export async function createQuestion(req, res, next) {
@@ -169,12 +190,9 @@ export async function listQuestions(req, res, next) {
         filter.tags = tags.length > 1 ? { $in: tags } : tags[0]
       }
     }
-    if (req.query.status === 'open') {
-      filter.status = { $in: ['unanswered', 'answered'] }
-    } else if (req.query.status === 'resolved') {
-      filter.status = { $in: ['answered', 'closed'] }
-    } else if (req.query.status) {
-      filter.status = req.query.status
+    const statusFilter = getQuestionStatusFilter(req.query.status)
+    if (statusFilter) {
+      filter.status = statusFilter
     }
     if (req.query.search) {
       // Keyword search over question text (title/body) and answer text
@@ -229,11 +247,15 @@ export async function listQuestions(req, res, next) {
     }).select('target_id')
     const upvotedSet = new Set(myUpvotes.map((v) => v.target_id))
 
+    // Admins always see real names; anonymity is for students only
+    const realNameById = await getRealNameByUserId(questions.map((q) => q.author_id))
+
     res.json({
       success: true,
       questions: questions.map((q) => ({
         ...q,
-        author_name: q.is_anonymous ? 'Anonymous' : nameById[q.author_id] || 'User',
+        author_name: isAdmin(req) ? (realNameById[q.author_id] || nameById[q.author_id] || 'User') :
+                     (q.is_anonymous ? 'Anonymous' : nameById[q.author_id] || 'User'),
         hasVoted: upvotedSet.has(q.question_id),
       })),
       pagination: paginationResult(page, limit, total),
@@ -303,6 +325,7 @@ export async function getQuestionById(req, res, next) {
       ...comments.map((c) => c.author_id),
     ]
     const nameById = await getDisplayNameByUserId(authorIds)
+    const realNameById = await getRealNameByUserId(authorIds)
 
     const admin = isAdmin(req)
     function moderationState(doc) {
@@ -310,14 +333,19 @@ export async function getQuestionById(req, res, next) {
       if (doc.moderation_status && doc.moderation_status !== 'approved') return 'under_review'
       return 'visible'
     }
-    // Decorate with author name + moderation state; redact hidden bodies for non-admins
+    // Decorate with author name + moderation state; redact hidden bodies for non-admins.
+    // Admins always see real names for all contributors; anonymity is for students only.
     function decorate(doc) {
-      const base = { ...doc, author_name: nameById[doc.author_id] || 'User' }
+      const authorName = admin
+        ? (realNameById[doc.author_id] || nameById[doc.author_id] || 'User')
+        : (doc.author_role === 'ADMIN' ? 'ADMIN' : (nameById[doc.author_id] || 'User'))
+      const base = { ...doc, author_name: authorName }
       const state = moderationState(doc)
       if (admin || state === 'visible') {
         return { ...base, moderation_state: 'visible' }
       }
-      return { ...base, moderation_state: state, body: '', body_plain: '' }
+      const { body_plain: _, ...docWithoutPlain } = base
+      return { ...docWithoutPlain, moderation_state: state, body: '' }
     }
 
     // Current user's vote on each answer (for highlight / deselect)
@@ -334,7 +362,9 @@ export async function getQuestionById(req, res, next) {
       success: true,
       question: {
         ...questionObj,
-        author_name: questionObj.is_anonymous ? 'Anonymous' : nameById[questionObj.author_id] || 'User',
+        author_name: isAdmin(req)
+        ? (realNameById[questionObj.author_id] || nameById[questionObj.author_id] || 'User')
+        : (questionObj.is_anonymous ? 'Anonymous' : nameById[questionObj.author_id] || 'User'),
       },
       answers: answers.map((a) => ({ ...decorate(a), my_vote: voteByAnswer[a.answer_id] || 0 })),
       comments: comments.map(decorate),

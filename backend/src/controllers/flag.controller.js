@@ -34,7 +34,18 @@ async function flagsWithTargets(flags) {
   return Promise.all(
     flags.map(async (flag) => {
       const target = await findContentTarget(flag.target_type, flag.target_id)
-      return { ...serialize(flag), target: serialize(target) }
+      const [reporter, author] = await Promise.all([
+        User.findOne({ user_id: flag.reported_by }).select('name').lean(),
+        target?.author_id
+          ? User.findOne({ user_id: target.author_id }).select('name').lean()
+          : Promise.resolve(null),
+      ])
+      return {
+        ...serialize(flag),
+        target: serialize(target),
+        reported_by_name: reporter?.name || null,
+        author_name: author?.name || null,
+      }
     }),
   )
 }
@@ -138,6 +149,10 @@ export async function resolveFlag(req, res, next) {
       throw createHttpError(400, 'Invalid flag resolution action')
     }
 
+    // Look up the target and author for notifications
+    const target = await findContentTarget(flag.target_type, flag.target_id)
+    const authorId = target?.author_id
+
     const actionMap = { hide_content: 'hide', delete_content: 'delete' }
     if (actionMap[req.body.action]) {
       await applyModerationAction({
@@ -147,19 +162,28 @@ export async function resolveFlag(req, res, next) {
         adminId: req.user.userId,
         reason: req.body.resolutionNote,
       })
+      // Notify the author of the hidden/deleted content
+      if (authorId) {
+        await Notification.create({
+          recipient_id: authorId,
+          actor_id: req.user.userId,
+          type: 'content_hidden',
+          title: 'Content hidden for policy violation',
+          body: req.body.resolutionNote || 'An administrator reviewed your content and found it violated community guidelines.',
+          reference_id: flag.target_id,
+          reference_type: flag.target_type,
+          link: target?.question_id ? `/query/${target.question_id}` : null,
+        })
+      }
     }
 
     if (req.body.action === 'warn_user' || req.body.action === 'suspend_user') {
-      const target = await findContentTarget(flag.target_type, flag.target_id)
-      const targetUserId = target?.author_id
-
-      if (!targetUserId) {
+      if (!authorId) {
         throw createHttpError(404, 'Target author not found')
       }
 
       if (req.body.action === 'suspend_user') {
-        const targetUser = await User.findOne({ user_id: targetUserId })
-
+        const targetUser = await User.findOne({ user_id: authorId })
         if (!targetUser) {
           throw createHttpError(404, 'Target author not found')
         }
@@ -168,7 +192,7 @@ export async function resolveFlag(req, res, next) {
         }
 
         await User.updateOne(
-          { user_id: targetUser.user_id },
+          { user_id: authorId },
           {
             $set: {
               status: 'suspended',
@@ -180,15 +204,16 @@ export async function resolveFlag(req, res, next) {
         )
       }
 
+      // Notify the author
       await Notification.create({
-        recipient_id: targetUserId,
+        recipient_id: authorId,
         actor_id: req.user.userId,
         type: req.body.action === 'warn_user' ? 'warning' : 'account_status',
         title: req.body.action === 'warn_user' ? 'Moderation warning' : 'Account suspended',
         body: req.body.resolutionNote || 'An administrator reviewed your content.',
         reference_id: flag.target_id,
         reference_type: flag.target_type,
-        link: target.question_id ? `/query/${target.question_id}` : null,
+        link: target?.question_id ? `/query/${target.question_id}` : null,
       })
     }
 
@@ -199,15 +224,23 @@ export async function resolveFlag(req, res, next) {
     flag.resolution_note = req.body.resolutionNote || ''
     await flag.save()
 
+    // Notify the reporter
+    const reporterBody =
+      status === 'approved'
+        ? req.body.action === 'no_action'
+          ? 'Your report was reviewed and the content was found to not violate guidelines.'
+          : 'Your report was upheld — action has been taken on the content.'
+        : 'Your report was reviewed and found not to violate community guidelines.'
+
     await Notification.create({
       recipient_id: flag.reported_by,
       actor_id: req.user.userId,
       type: 'flag_resolved',
       title: 'Report reviewed',
-      body: `Your report has been ${status}.`,
+      body: reporterBody,
       reference_id: flag.target_id,
       reference_type: flag.target_type,
-      link: target.question_id ? `/query/${target.question_id}` : null,
+      link: target?.question_id ? `/query/${target.question_id}` : null,
     })
 
     res.json({ success: true, message: 'Flag resolved' })

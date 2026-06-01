@@ -4,8 +4,8 @@ import { Bell, LogOut, Moon, Search, Settings, Sun } from 'lucide-react'
 function AdminHeader({
   user,
   initials,
+  currentAdminView,
   searchQuery,
-  notifications,
   unreadCount,
   isDark,
   onSearchChange,
@@ -18,19 +18,23 @@ function AdminHeader({
 }) {
   return (
     <header className="relative flex min-h-[72px] items-center justify-between border-b border-border bg-[#f8f9fa] px-5 py-4 lg:px-8 dark:bg-bg-card">
-      <form
-        className="flex h-10 w-full max-w-[420px] items-center gap-2 rounded-lg bg-bg-primary px-3 text-text-muted transition focus-within:ring-1 focus-within:ring-brand"
-        onSubmit={onSearchSubmit}
-      >
-        <Search className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-        <input
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-muted"
-          placeholder="Search queries, FAQs, or status..."
-          type="search"
-          value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
-        />
-      </form>
+      {currentAdminView === 'dashboard' || currentAdminView === 'queriesManagement' ? (
+        <form
+          className="flex h-10 w-full max-w-[420px] items-center gap-2 rounded-lg bg-bg-primary px-3 text-text-muted transition focus-within:ring-1 focus-within:ring-brand"
+          onSubmit={onSearchSubmit}
+        >
+          <Search className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+          <input
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-muted"
+            placeholder="Search queries, FAQs, or status..."
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+          />
+        </form>
+      ) : (
+        <div />
+      )}
 
       <div className="ml-4 flex items-center gap-4 lg:gap-6">
         <button

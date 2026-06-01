@@ -1,24 +1,23 @@
-import { axisPrivate, axiosPublic } from '../../api/axios'
+import { axisPrivate } from '../../api/axios'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 export function timeAgo(dateStr) {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1)   return 'Just now'
-  if (mins < 60)  return `${mins}m ago`
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24)   return `${hrs}h ago`
+  if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days === 1) return 'Yesterday'
   return `${days}d ago`
 }
 
 function mapStatus(q) {
-  if (q.status === 'unanswered')                         return 'Active'
-  if (q.status === 'answered' && !q.has_expert_answer)   return 'In Progress'
-  if (q.status === 'answered' && q.has_expert_answer)    return 'Resolved'
-  if (q.status === 'closed')                             return 'Resolved'
+  if (q.status === 'unanswered') return 'Active'
+  if (q.status === 'answered') return 'In Progress'
+  if (q.status === 'closed') return 'Resolved'
   return 'Active'
 }
 
@@ -33,18 +32,18 @@ export function normalizeQuestion(q, currentUserId) {
   const isSelf = q.author_id === currentUserId
 
   return {
-    id:         q.question_id,
-    upvotes:    q.upvotes ?? 0,
+    id: q.question_id,
+    upvotes: q.upvotes ?? 0,
     hasUpvoted: q.hasVoted === true,
-    author:     isSelf ? 'self' : 'other',
+    author: isSelf ? 'self' : 'other',
     authorName: isSelf ? 'You' : (q.author_name || 'User'),
-    timestamp:  new Date(q.created_at).getTime(),
+    timestamp: new Date(q.created_at).getTime(),
     tags,
     meta,
-    title:      q.title,
-    desc:       q.body,
-    comments:   q.answer_count ?? 0,
-    status:     mapStatus(q),
+    title: q.title,
+    desc: q.body,
+    comments: q.answer_count ?? 0,
+    status: mapStatus(q),
   }
 }
 
@@ -62,13 +61,13 @@ export async function fetchQuestions({
   questionId = '',
 } = {}) {
   const params = new URLSearchParams({ kind: 'community', page, limit })
-  if (search)       params.set('search', search)
-  if (tag)          params.set('tag', tag)
-  if (sort)         params.set('sort', sort)
-  if (status)       params.set('status', status)
+  if (search) params.set('search', search)
+  if (tag) params.set('tag', tag)
+  if (sort) params.set('sort', sort)
+  if (status) params.set('status', status)
   if (createdAfter) params.set('createdAfter', createdAfter)
-  if (my)           params.set('my', '1')
-  if (questionId)   params.set('id', questionId)
+  if (my) params.set('my', '1')
+  if (questionId) params.set('id', questionId)
 
   const { data } = await axisPrivate().get(`/api/questions?${params}`)
   return data
@@ -85,7 +84,7 @@ export async function fetchQuestionTags() {
 }
 
 export async function createQuestion({ title, body, tags = [], isAnonymous = false }) {
-  const { data } = await axisPrivate().post('/api/questions', { title, body, tags, isAnonymous })
+  const { data } = await axisPrivate().post('/api/questions', { title, body, tags, is_anonymous: isAnonymous })
   return data // { success, questionId }
 }
 
@@ -135,10 +134,12 @@ export async function reportContent({ targetType, targetId, reason, description 
 
 // ─── Leaderboard ───────────────────────────────────────────────────────────────
 
-export async function fetchLeaderboard({ type = 'spark', limit = 20 } = {}) {
+export async function fetchLeaderboard({ type = 'spark', limit = 20, window } = {}) {
   const params = new URLSearchParams({ type, limit })
+  if (window) params.set('window', window) // 'today' | 'monthly' (spark only)
   const { data } = await axisPrivate().get(`/api/leaderboard?${params}`)
-  return data.leaderboard || [] // [{ userId, displayName, score }]
+  // [{ userId, displayName, score, answersCount?, upvotesReceived? }]
+  return data.leaderboard || []
 }
 
 // ─── Notifications ───────────────────────────────────────────────────────────
