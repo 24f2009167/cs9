@@ -23,7 +23,7 @@ const tourSteps = [
   {
     selector: '[data-tour="raise-query-btn"]',
     title: 'Raise a New Query ✍️',
-    body: "Can't find what you need? Ask a new question here and set a Spark bounty to reward resolvers who answer it.",
+    body: "Can't find what you need? Ask a new question here and set a Spark bounty to reward anyone who answers it.",
   },
   {
     selector: '[data-tour="contributions-widget"]',

@@ -14,6 +14,7 @@ export function getPagination(query) {
 
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
     throw createHttpError(400, 'Limit must be an integer between 1 and 1000')
+    throw createHttpError(400, 'Limit must be an integer between 1 and 100')
   }
 
   return { page, limit, skip: (page - 1) * limit }

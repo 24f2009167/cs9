@@ -78,29 +78,18 @@ if (isTest) {
 
 // Create the FAQ connection immediately (skip connection in test environments to prevent hanging)
 export const faqConnection = isTest
-  ? mongoose.createConnection()
-  : mongoose.createConnection(faqUri, connectionOptions);
-
-if (!isTest) {
-  faqConnection.on("connected", () => {
-    console.log(`FAQ MongoDB connected to: ${faqUri}`);
-  });
-  faqConnection.on("error", (err) => {
-    console.error(`FAQ MongoDB connection error: ${err.message}`);
-  });
-}
+  ? null
+  : faqUri
+    ? mongoose.createConnection(faqUri, connectionOptions)
+    : null;
 
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(mongoUri, {
-      ...connectionOptions,
-      dbName: process.env.MONGODB_DB_NAME,
-    });
-    console.log(`MongoDB connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`MongoDB connection failed: ${error.message}`);
-    process.exit(1);
-  }
+  const conn = await mongoose.connect(mongoUri, {
+    dbName: process.env.MONGODB_DB_NAME,
+    ...connectionOptions,
+  });
+  console.log(`MongoDB connected: ${conn.connection.host}`);
+  return conn;
 };
 
 export default connectDB;
