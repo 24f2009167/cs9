@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
 import Modal from '../../../components/Modal/Modal'
 import Button from '../../../components/Button/Button'
 import Input from '../../../components/Input/Input'
@@ -11,12 +10,10 @@ function LoginModal({ isOpen, onClose, onLogin }) {
   const [error, setError] = useState('')
   const [isForgotPassword, setIsForgotPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
 
   const resetState = () => {
     setError('')
     setIsForgotPassword(false)
-    setShowPassword(false)
   }
 
   const handleClose = () => {
@@ -107,26 +104,15 @@ function LoginModal({ isOpen, onClose, onLogin }) {
             />
 
             <label className="sr-only" htmlFor="login-password">Password</label>
-            <div className="relative">
-              <Input
-                autoComplete="current-password"
-                id="login-password"
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
-                required
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                className="pr-12"
-              />
-              <button
-                type="button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-                onClick={() => setShowPassword((prev) => !prev)}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" strokeWidth={1.8} /> : <Eye className="h-5 w-5" strokeWidth={1.8} />}
-              </button>
-            </div>
+            <Input
+              autoComplete="current-password"
+              id="login-password"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              required
+              type="password"
+              value={password}
+            />
 
             <Button
               type="button"
