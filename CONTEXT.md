@@ -80,7 +80,7 @@ See [backend/ER_DIAGRAM.md](./backend/ER_DIAGRAM.md) for the full picture. Highl
 | `users` | name, email, `spark_points` (cache), `status` (active/disabled/suspended) |
 | `user_profiles` | display_name, avatar, `reputation`, expertise |
 | `roles` + `user_role_mappers` | role definitions + user↔role join |
-| `questions` | `kind` (faq/community), `status`, `moderation_status`, tags, `is_anonymous`, `is_pinned/locked`, `upvotes`, `answer_count`, `view_count`, `has_expert_answer`, `spark_bounty` |
+| `questions` | `kind` (faq/community), `status`, `moderation_status`, tags, `is_anonymous`, `is_pinned/locked`, `upvotes`, `answer_count`, `view_count`, `has_expert_answer`, `spark_bounty`, `assigned_to`, `approval_requested_from`, `approval_status` |
 | `answers` | `author_role` snapshot, `is_expert` (resolver/admin), `is_accepted`, `is_official`, `upvotes`/`downvotes`/`score` |
 | `comments` | threaded under answers (or question-level), `author_role` |
 | `votes` | per-user vote ledger on questions/answers |
@@ -88,10 +88,22 @@ See [backend/ER_DIAGRAM.md](./backend/ER_DIAGRAM.md) for the full picture. Highl
 | `flags` | reported content: target_type/id, reason, status (pending/approved/rejected), review_action |
 | `notifications` | in-app notifications |
 | `tags` | FAQ/question tags |
+| `approvals` | admin escalation records: `question_id`, `requested_by`, `requested_from`, `status` |
+| `question_assignment_logs` | resolver auto-assignment audit trail |
+| `question_views` | per-user unique view tracking (prevents duplicate view_count increments) |
+| `platform_settings` | configurable platform-wide settings |
+| `faq` | standalone FAQ entries (separate from community questions) |
 
 Many counters (`upvotes`, `answer_count`, `view_count`, `spark_points`,
 `has_expert_answer`) are **denormalized cache fields**; rebuild scripts exist
 (`npm run rebuild:*`, `recompute:reputation`) to reconcile drift.
+
+### Admin escalation workflow
+Admins can request another admin's approval for a question (e.g., before promoting to FAQ):
+`POST /api/admin/questions/:id/seek-approval` → sets `question.approval_status = 'pending'`
+and creates an `Approval` record. The target admin marks it done via
+`POST /api/admin/questions/:id/approve-request` → `Approval.status = 'approved'`.
+The `hasApproval` filter on `GET /api/admin/questions` surfaces pending/approved queries.
 
 ### Key subsystems
 - **Questions/answers/comments** — `question.controller.js` (list with filters +

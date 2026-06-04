@@ -31,9 +31,11 @@ cs9/
 │   │   ├── server.js           ← Entry point (DB connect, cron start, listen)
 │   │   ├── db.js               ← Mongoose connection
 │   │   ├── swagger.js          ← OpenAPI spec builder
+│   │   ├── openapi-components.js
+│   │   ├── openapi-paths.js
 │   │   │
 │   │   ├── controllers/        ← Route handlers
-│   │   │   ├── admin.controller.js
+│   │   │   ├── admin.controller.js   ← seek-approval, approve-request, dashboard
 │   │   │   ├── answer.controller.js
 │   │   │   ├── auth.controller.js
 │   │   │   ├── comment.controller.js
@@ -41,7 +43,7 @@ cs9/
 │   │   │   ├── moderation.controller.js
 │   │   │   ├── notification.controller.js
 │   │   │   ├── profile.controller.js
-│   │   │   ├── question.controller.js
+│   │   │   ├── question.controller.js ← listQuestions with hasApproval filter
 │   │   │   ├── resolver.controller.js
 │   │   │   ├── spark.controller.js
 │   │   │   └── user.controller.js
@@ -52,23 +54,38 @@ cs9/
 │   │   │
 │   │   ├── models/             ← Mongoose schemas
 │   │   │   ├── answer.model.js
+│   │   │   ├── approval.model.js    ← admin escalation tracking
 │   │   │   ├── comment.model.js
+│   │   │   ├── faq.model.js
 │   │   │   ├── flag.model.js
 │   │   │   ├── notification.model.js
+│   │   │   ├── platform-settings.model.js
 │   │   │   ├── question-assignment-log.model.js
 │   │   │   ├── question.model.js
+│   │   │   ├── question_view.model.js
 │   │   │   ├── role.model.js
 │   │   │   ├── spark-transaction.model.js
+│   │   │   ├── tag.model.js
 │   │   │   ├── user-profile.model.js
+│   │   │   ├── user-role-mapper.model.js
 │   │   │   ├── user.model.js
 │   │   │   └── vote.model.js
 │   │   │
 │   │   ├── routes/             ← Express route definitions
-│   │   │   ├── admin.routes.js, answer.routes.js, auth.routes.js,
-│   │   │   ├── comment.routes.js, flag.routes.js, leaderboard.routes.js,
-│   │   │   ├── moderation.routes.js, notification.routes.js,
-│   │   │   ├── profile.routes.js, question.routes.js, resolver.routes.js,
-│   │   │   ├── spark.routes.js, user.routes.js
+│   │   │   ├── admin.routes.js      ← seek-approval, approve-request routes
+│   │   │   ├── answer.routes.js
+│   │   │   ├── auth.routes.js
+│   │   │   ├── comment.routes.js
+│   │   │   ├── dashboard.routes.js
+│   │   │   ├── flag.routes.js
+│   │   │   ├── leaderboard.routes.js
+│   │   │   ├── moderation.routes.js
+│   │   │   ├── notification.routes.js
+│   │   │   ├── profile.routes.js
+│   │   │   ├── question.routes.js
+│   │   │   ├── resolver.routes.js
+│   │   │   ├── spark.routes.js
+│   │   │   └── user.routes.js
 │   │   │
 │   │   ├── scheduled/
 │   │   │   └── question-assignment.js   ← Cron: auto-assign old unanswered questions
@@ -76,7 +93,7 @@ cs9/
 │   │   ├── scripts/            ← Migrations, seeds, rebuild utilities
 │   │   │   ├── migrations/
 │   │   │   │   ├── 002-migrate-profile-identity.js
-│   │   │   │   ├── 003-migrate-expert-profile-fields.js
+│   │   │   ├── 003-migrate-expert-profile-fields.js
 │   │   │   │   ├── 004-migrate-upvoted-by-to-votes.js
 │   │   │   │   ├── 005-reconcile-spark-points.js
 │   │   │   │   └── 006-backfill-question-assignment-log-ids.js
@@ -137,9 +154,12 @@ cs9/
         │       ├── service.js
         │       ├── components/Header/, LeftPane/
         │       └── pages/
-        │           ├── Dashboard/
+        │           ├── Dashboard/           ← Stats, traffic chart, approval metrics, SLA charts
         │           ├── FAQManagement/
-        │           ├── QueriesManagement/
+        │           ├── FlagModeration/
+        │           ├── QueriesManagement/   ← All community questions, approval status filter
+        │           ├── QueryDetail/         ← Question detail, seek-approval, approve-request
+        │           ├── Settings/
         │           ├── SparkLeaderboard/
         │           └── AdminProfile/
         ├── stores/                  ← authStore, themeStore (Zustand, persisted)
@@ -167,14 +187,14 @@ cs9/
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Issue #40 Select scroll + Others option | ✅ Committed (`60824ae`) | Not pushed |
-| Issue #44 createAnswer validation | ✅ Committed (`2001eb7`) | Not pushed |
-| Issue #43 body_plain removal | ✅ Committed (`eecdc8a`) | Not pushed |
-| Issue #41 ReportModal import missing | 🔴 Open | Needs component creation |
-| Issue #42 Vote cache atomicity | 🟡 Open | Needs transaction fix |
-| Documentation sync | 🔄 In progress | This README |
+| Escalation workflow (PR #113) | ✅ Merged (`ee0d867`) | admin approval + Dashboard SLA charts |
+| FAQ export (PR #101) | ✅ Merged | Export question to FAQ |
+| Query attachments (PR #105) | ✅ Merged | Preview + download |
+| Flag filter (PR #103) | ✅ Merged | Hide rejected queries from admin list |
+| Password toggle (PR #107) | ✅ Merged | Profile password visibility |
+| Documentation sync | ✅ Done | README + ER_DIAGRAM + FILESTRUCTURE + CONTEXT updated |
 
-**`main` SHA:** `da64bbf`
+**`main` SHA:** `ee0d867`
 
 ---
 

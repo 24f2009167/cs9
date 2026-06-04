@@ -36,8 +36,21 @@ erDiagram
     USER ||--o{ NOTIFICATION : "recipient_id"
     USER ||--o{ SPARK_TRANSACTION : "user_id"
 
+    QUESTION ||--o{ APPROVAL : "question_id"
+    USER     ||--o{ APPROVAL : "requested_by"
     QUESTION ||--o{ QUESTION_ASSIGNMENT_LOG : "question_id"
     USER ||--o{ QUESTION_ASSIGNMENT_LOG : "resolver_id"
+
+    APPROVAL {
+        string approval_id PK
+        string question_id FK
+        string requested_by FK "admin user_id"
+        string requested_from FK "admin user_id"
+        string requested_from_name
+        string status "pending|approved|rejected"
+        date   created_at
+        date   updated_at
+    }
 
     VOTE }o..o| QUESTION : "target (polymorphic)"
     VOTE }o..o| ANSWER  : "target (polymorphic)"
@@ -115,6 +128,9 @@ erDiagram
         number view_count
         number answer_count "cache from ANSWER"
         boolean has_expert_answer "cache from ANSWER"
+        string approval_requested_from FK "admin user_id (escalation target)"
+        string approval_requested_from_name
+        string approval_status "pending|approved" "null = not escalated"
         date   last_activity_at
         string linked_faq_id FK "self → QUESTION"
         string moderation_status "approved|pending|rejected"
@@ -256,6 +272,7 @@ erDiagram
 | Comment self-reference | `parent_id` → parent comment, depth capped at 1 (one level of replies) |
 | Question self-reference | `linked_faq_id` → an FAQ a community question was promoted to / duplicates |
 | Vote / Flag | polymorphic (`target_type` + `target_id`) → question \| answer \| comment |
+| Approval | admin escalation: `requested_by` → `requested_from` for a question; tracks approval status |
 | Assignment log | resolver auto-assignment audit trail (cron-driven for unanswered questions) |
 
 ## Scoring fields (see `LEADERBOARD.md`)
@@ -276,3 +293,5 @@ erDiagram
 | `questions.has_expert_answer` | visible resolver/admin/expert answers | answer lifecycle/moderation; `rebuild-question-counters.js` |
 | `answers.comment_count/top_level_comment_count` | visible `comments.answer_id` count | comment lifecycle/moderation; `rebuild-comment-counters.js` |
 | `comments.reply_count` | visible `comments.parent_id` count | comment lifecycle/moderation; `rebuild-comment-counters.js` |
+| `questions.approval_status` | `Approval` collection status | `adminSeekApproval` / `adminMarkApprovalReceived` controllers |
+| `questions.approval_status` | `Approval` collection status | `adminSeekApproval` / `adminMarkApprovalReceived` controllers |

@@ -8,10 +8,10 @@ backend/
 │   ├── server.js
 │   ├── swagger.js
 │   ├── openapi-components.js
-│   ├── openapi-paths.js
+│   └── openapi-paths.js
 │   │
 │   ├── controllers/
-│   │   ├── admin.controller.js
+│   │   ├── admin.controller.js           ← includes seek-approval / approve-request
 │   │   ├── answer.controller.js
 │   │   ├── auth.controller.js
 │   │   ├── comment.controller.js
@@ -19,7 +19,7 @@ backend/
 │   │   ├── moderation.controller.js
 │   │   ├── notification.controller.js
 │   │   ├── profile.controller.js
-│   │   ├── question.controller.js
+│   │   ├── question.controller.js        ← includes hasApproval filter
 │   │   ├── resolver.controller.js
 │   │   ├── spark.controller.js
 │   │   └── user.controller.js
@@ -30,14 +30,20 @@ backend/
 │   │
 │   ├── models/
 │   │   ├── answer.model.js
+│   │   ├── approval.model.js             ← admin escalation tracking
 │   │   ├── comment.model.js
+│   │   ├── faq.model.js
 │   │   ├── flag.model.js
 │   │   ├── notification.model.js
+│   │   ├── platform-settings.model.js
 │   │   ├── question-assignment-log.model.js
 │   │   ├── question.model.js
+│   │   ├── question_view.model.js        ← per-user view tracking (unique views)
 │   │   ├── role.model.js
 │   │   ├── spark-transaction.model.js
+│   │   ├── tag.model.js
 │   │   ├── user-profile.model.js
+│   │   ├── user-role-mapper.model.js
 │   │   ├── user.model.js
 │   │   └── vote.model.js
 │   │
@@ -46,6 +52,7 @@ backend/
 │   │   ├── answer.routes.js
 │   │   ├── auth.routes.js
 │   │   ├── comment.routes.js
+│   │   ├── dashboard.routes.js           ← dashboard aggregation
 │   │   ├── flag.routes.js
 │   │   ├── leaderboard.routes.js
 │   │   ├── moderation.routes.js

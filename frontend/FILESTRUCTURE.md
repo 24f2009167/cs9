@@ -93,7 +93,7 @@ frontend/
     │   │           └── index.jsx             ← Ask a new question form
     │   │
     │   └── admin/              ← Admin panel (separate layout, separate routes)
-    │       ├── index.jsx       ← Shell with view routing by ?view= query param
+    │       ├── index.jsx       ← Shell with view routing by currentAdminView state
     │       ├── service.js
     │       ├── components/
     │       │   ├── Header/
@@ -104,13 +104,20 @@ frontend/
     │       │   │   └── README.md
     │       │   └── README.md
     │       └── pages/
+    │       └── pages/
     │           ├── Dashboard/
-    │           │   └── index.jsx             ← Stats overview
+    │           │   └── index.jsx             ← Stats, traffic chart, approval metrics, SLA charts
     │           ├── FAQManagement/
     │           │   ├── index.jsx             ← CRUD for FAQ entries
     │           │   └── README.md
+    │           ├── FlagModeration/
+    │           │   └── index.jsx             ← Flag review queue
     │           ├── QueriesManagement/
-    │           │   └── index.jsx             ← All community questions, moderation
+    │           │   └── index.jsx             ← All community questions, approval status filter
+    │           ├── QueryDetail/
+    │           │   └── index.jsx             ← Question detail, seek-approval, approve-request
+    │           ├── Settings/
+    │           │   └── index.jsx             ← Admin settings
     │           ├── SparkLeaderboard/
     │           │   └── index.jsx             ← Leaderboard with controls
     │           └── AdminProfile/
