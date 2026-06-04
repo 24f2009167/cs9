@@ -5,6 +5,7 @@ import Comment from '../models/comment.model.js'
 import Flag from '../models/flag.model.js'
 import Notification from '../models/notification.model.js'
 import Question from '../models/question.model.js'
+import FAQQuestion from '../models/faq.model.js'
 import Role from '../models/role.model.js'
 import SparkTransaction from '../models/spark-transaction.model.js'
 import Tag from '../models/tag.model.js'
@@ -658,6 +659,76 @@ export async function adminCommentAndResolve(req, res, next) {
       success: true,
       message: 'Comment posted and question resolved',
       answerId: answer.answer_id,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function exportQuestionToFAQ(req, res, next) {
+  try {
+    const { questionId } = req.params
+    const { curatedTitle, curatedBody, tags } = req.body
+
+    if (!curatedTitle || typeof curatedTitle !== 'string' || !curatedTitle.trim()) {
+      throw createHttpError(400, 'Curated title is required')
+    }
+    const trimmedTitle = curatedTitle.trim()
+    if (trimmedTitle.length < 10) {
+      throw createHttpError(400, 'Title must be at least 10 characters long')
+    }
+    if (trimmedTitle.length > 300) {
+      throw createHttpError(400, 'Title must be at most 300 characters long')
+    }
+
+    if (!curatedBody || typeof curatedBody !== 'string' || !curatedBody.trim()) {
+      throw createHttpError(400, 'Curated body is required')
+    }
+
+    // Retrieve the original community question by question_id
+    const question = await Question.findOne({ question_id: questionId })
+    if (!question) {
+      throw createHttpError(404, 'Original question not found')
+    }
+
+    // Generate unique slug
+    let baseSlug = trimmedTitle
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'general'
+
+    let slug = baseSlug
+    let counter = 1
+    while (await FAQQuestion.exists({ slug })) {
+      slug = `${baseSlug}-${counter}`
+      counter++
+    }
+
+    // Create the new FAQ Question
+    const faqQuestion = await FAQQuestion.create({
+      title: trimmedTitle,
+      body: curatedBody.trim(),
+      tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
+      slug,
+      kind: 'faq',
+      status: 'published',
+      visibility: 'public',
+      moderation_status: 'approved',
+      author_id: req.user.userId,
+      last_activity_at: new Date()
+    })
+
+    // Link original question to the new FAQ question
+    await Question.updateOne(
+      { question_id: questionId },
+      { $set: { linked_faq_id: faqQuestion.question_id } }
+    )
+
+    res.status(201).json({
+      success: true,
+      message: 'Question successfully exported to FAQ',
+      faq: faqQuestion
     })
   } catch (error) {
     next(error)

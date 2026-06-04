@@ -2,75 +2,87 @@ import { useEffect, useState } from 'react'
 
 const tourSteps = [
   {
-    title: 'Welcome to Vicharanashala FAQ! 🎓',
-    subtitle: 'Student Portal Overview',
-    body: "Welcome to your query resolution center! Let's take a quick 2-minute tour to help you navigate your dashboard, search categories, upvote questions, submit new queries, track contributions, and earn Spark points.",
+    title: 'Vicharanashala FAQ ADMIN PORTAL 🛠️',
+    subtitle: 'Administrator Control Center',
+    body: "Welcome to the administrator control room! Let's take a detailed walkthrough of the dashboard KPIs, unresolved queries, moderations, charts, user statistics, notifications, settings, and navigation.",
     icon: (
       <svg className="w-10 h-10 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     )
   },
   {
-    selector: '[data-tour="search-bar"]',
-    title: 'Search FAQs & Categories 🔍',
-    subtitle: 'Instant Knowledge Base Lookup',
-    body: 'Use the search bar and categories filter to quickly look up existing questions. Try searching before asking a new question to find immediate answers!',
+    selector: '[data-tour="admin-kpis"]',
+    title: 'Real-Time Metrics 📊',
+    subtitle: 'System Health & Performance',
+    body: 'Monitor total community queries, curated FAQ articles, answer activity, and open urgent flags at a glance.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     )
   },
   {
-    selector: '[data-tour="tabs-filter"]',
-    title: 'Filter by Status & Trends 📊',
-    subtitle: 'Tabbed Query Discovery',
-    body: 'Switch between tabs like Trending, Unanswered, and Resolved to explore community queries in different stages of resolution.',
+    selector: '[data-tour="admin-unresolved"]',
+    title: 'Unresolved Queries ⏳',
+    subtitle: 'Actionable Inquiries',
+    body: 'View open questions that need attention or assignment to resolvers. Click "View all queries" to see the full list.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     )
   },
   {
-    selector: '[data-tour="upvote-btn"]',
-    title: 'Upvote to Prioritize 👍',
-    subtitle: 'Collaborative Query Ranking',
-    body: 'If you have the same question as another student, upvote their query. High-upvote queries get resolved faster by our laboratory mentors!',
+    selector: '[data-tour="admin-charts"]',
+    title: 'Visual Analytics & Traffic 📈',
+    subtitle: 'Category Volume & Daily Traffic',
+    body: 'Analyze question categories and hourly traffic trends over the last 24 hours to scale system resources or assign specific moderators.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163-.024-.298-.09-.4-.2l-3.7-3.7a1 1 0 01-.3-.7V10a1 1 0 01.3-.7l4-4a1 1 0 011.4 0l.7.7a1 1 0 01.3.7v3.3H14z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7 12l3-3 3 3 4-4M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
       </svg>
     )
   },
   {
-    selector: '[data-tour="raise-query-btn"]',
-    title: 'Raise a New Query ✍️',
-    subtitle: 'Submit a Q&A Thread',
-    body: "Can't find what you need? Ask a new question here and set a Spark bounty to reward anyone who answers it.",
+    selector: '[data-tour="admin-moderation"]',
+    title: 'Moderation & Escalations 🚨',
+    subtitle: 'Escalated Flag Queue',
+    body: 'Keep the community safe! Review questions, answers, and comments flagged by automated moderation systems or reported by students.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
       </svg>
     )
   },
   {
-    selector: '[data-tour="contributions-widget"]',
-    title: 'Contributions & Sparks ⚡',
-    subtitle: 'Spark Points Economy',
-    body: 'Track your questions, answers, and comments here. Your active Spark points will also show up in this panel.',
+    selector: '[data-tour="admin-stats-summary"]',
+    title: 'Users & Sparks Ledger ⚡',
+    subtitle: 'User Growth & Spark Economy',
+    body: 'Track total registered users, new user signups this week, and the aggregate Spark points circulating across the entire ecosystem.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
     )
   },
   {
-    selector: '[data-tour="user-sidebar"]',
-    title: 'Left Menu Navigation 🗂️',
-    subtitle: 'Portal Sidebar Controls',
-    body: 'Switch seamlessly between your main Q&A Dashboard, global FAQ list, your own raised Queries, and the Leaderboard.',
+    selector: '[data-tour="admin-settings-shortcut"]',
+    title: 'Scoring & Configuration ⚙️',
+    subtitle: 'System Threshold Parameters',
+    body: 'Quickly update points allocation criteria, flags thresholds, and administrative settings using this settings shortcut card.',
+    icon: (
+      <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      </svg>
+    )
+  },
+  {
+    selector: '[data-tour="admin-sidebar"]',
+    title: 'Main Navigation 🗂️',
+    subtitle: 'Sidebar Control Menu',
+    body: 'Navigate seamlessly between the Dashboard, Queries list, moderation Flags, User management, Spark point settings, FAQ articles, and global configurations.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 12h16M4 18h16" />
@@ -78,10 +90,21 @@ const tourSteps = [
     )
   },
   {
-    selector: '[data-tour="user-notifications"]',
-    title: 'Real-time Alerts & Feeds 🔔',
-    subtitle: 'Instant Activity Stream',
-    body: 'Get notified immediately when a mentor answers your question, someone comments on your post, or when your query is resolved.',
+    selector: '[data-tour="admin-search"]',
+    title: 'Global Search 🔍',
+    subtitle: 'Fast Data Filtering',
+    body: 'Quickly find any queries, FAQs, or moderation records by title, category tags, or status.',
+    icon: (
+      <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    )
+  },
+  {
+    selector: '[data-tour="admin-notifications"]',
+    title: 'System Alerts & Notifications 🔔',
+    subtitle: 'Real-time Activity Stream',
+    body: 'Receive instant notifications for newly submitted flags, user escalations, and resolved system tasks.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -89,10 +112,10 @@ const tourSteps = [
     )
   },
   {
-    selector: '[data-tour="user-theme"]',
-    title: 'Dark / Light Mode 🌗',
-    subtitle: 'Interface Personalization',
-    body: 'Toggle between dark and light themes at any time to match your environmental lighting and focus preferences.',
+    selector: '[data-tour="admin-theme"]',
+    title: 'Visual Theme Toggle 🌗',
+    subtitle: 'Interface Customization',
+    body: 'Switch seamlessly between light and dark visual themes to configure the display for your preference.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -100,10 +123,21 @@ const tourSteps = [
     )
   },
   {
-    selector: '[data-tour="user-menu"]',
-    title: 'Profile & Onboarding Tour ⚙️',
-    subtitle: 'User Account Controls',
-    body: 'Click your profile dropdown to edit your settings, restart this Product Tour whenever you need a refresh, or safely logout.',
+    selector: '[data-tour="admin-faq-view"]',
+    title: 'Switch to User View 🔄',
+    subtitle: 'Student Platform Sandbox',
+    body: 'Click "FAQ View" to jump directly to the student-facing FAQ platform to see how it looks to regular students.',
+    icon: (
+      <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    )
+  },
+  {
+    selector: '[data-tour="admin-user-menu"]',
+    title: 'Profile Settings & Re-tour ⚙️',
+    subtitle: 'Account Management',
+    body: 'Click your profile to edit your name, change passwords, restart this Product Tour at any time, or safely log out.',
     icon: (
       <svg className="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -153,7 +187,7 @@ const styleContent = `
   }
 `
 
-function OnboardingTour({ userId, isActive, onClose }) {
+function AdminOnboardingTour({ userId, isActive, onClose }) {
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState(null)
   const [tooltipStyle, setTooltipStyle] = useState({
@@ -186,7 +220,7 @@ function OnboardingTour({ userId, isActive, onClose }) {
     const updatePosition = () => {
       const element = document.querySelector(currentStep.selector)
       if (element) {
-        // Scroll target to the center instantly for robust positioning and cutout coordinates
+        // Scroll the element into the center of the viewport instantly to guarantee stable layout and plenty of space above/below
         element.scrollIntoView({ block: 'center', behavior: 'auto' })
 
         const r = element.getBoundingClientRect()
@@ -227,7 +261,7 @@ function OnboardingTour({ userId, isActive, onClose }) {
       }
     }
 
-    // Delay slightly to ensure DOM is ready and tabs are rendered
+    // Delay slightly to ensure DOM is ready
     const timer = setTimeout(updatePosition, 100)
     window.addEventListener('resize', updatePosition)
     window.addEventListener('scroll', updatePosition, true)
@@ -261,7 +295,7 @@ function OnboardingTour({ userId, isActive, onClose }) {
   }
 
   const handleFinish = () => {
-    localStorage.setItem(`rogare-tour-completed-${userId}`, 'true')
+    localStorage.setItem(`rogare-admin-tour-completed-${userId}`, 'true')
     onClose?.()
   }
 
@@ -383,4 +417,4 @@ function OnboardingTour({ userId, isActive, onClose }) {
   )
 }
 
-export default OnboardingTour
+export default AdminOnboardingTour

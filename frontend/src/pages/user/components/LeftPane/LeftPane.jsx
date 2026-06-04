@@ -49,7 +49,7 @@ function LeftPane({ isCollapsed, onToggleCollapse, activeNav, onNavigate }) {
       )}
 
       {/* Nav */}
-      <nav className={`relative flex flex-col gap-0.5 ${isCollapsed ? 'items-center px-1' : 'pl-6 pr-3'}`}>
+      <nav data-tour="user-sidebar" className={`relative flex flex-col gap-0.5 ${isCollapsed ? 'items-center px-1' : 'pl-6 pr-3'}`}>
         <span className="absolute bottom-2 left-5 top-2 w-px bg-bg-tertiary" aria-hidden="true" />
 
         {NAV_ITEMS.map(({ label, Icon }) => {

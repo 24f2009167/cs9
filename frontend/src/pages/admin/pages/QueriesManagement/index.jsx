@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import {
   MessageSquare, ChevronUp, Zap, Tag, Pin, Lock, CheckCircle,
   Clock, User, ChevronLeft, ChevronRight, Loader, VenetianMask, Filter
@@ -41,8 +41,7 @@ function formatDate(value) {
 
 function QueriesManagementView({ searchQuery = '', onOpenQuery }) {
   const location = useLocation()
-  const navigate = useNavigate()
-  
+
   const [items, setItems]         = useState([])
   const [pagination, setPagination] = useState({ page: 1, pages: 0, total: 0 })
   const [loading, setLoading]     = useState(true)

@@ -175,6 +175,7 @@ function DashboardHeader({
         {/* Bell */}
         <Popover className="relative">
           <PopoverButton
+            data-tour="user-notifications"
             onClick={() => onNotifOpen?.()}
             className="relative p-1 text-text-secondary transition hover:text-text-primary focus:outline-none"
           >
@@ -215,6 +216,7 @@ function DashboardHeader({
 
         {/* Dark mode toggle */}
         <button
+          data-tour="user-theme"
           type="button"
           className="p-1 text-text-secondary transition hover:text-text-primary"
           onClick={() => onDarkToggle()}
@@ -228,7 +230,7 @@ function DashboardHeader({
         <span className="h-8 w-px bg-border" />
 
         {/* User menu */}
-        <Menu as="div" className="relative">
+        <Menu as="div" className="relative" data-tour="user-menu">
           <MenuButton className="flex items-center gap-3 focus:outline-none">
             <div className="text-right leading-tight">
               <p className="text-[13px] font-medium capitalize text-text-primary">{user?.name || 'Student'}</p>

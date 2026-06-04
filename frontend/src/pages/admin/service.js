@@ -165,3 +165,8 @@ export async function createFAQ({ title, body, tags }) {
   })
   return data.question
 }
+
+export async function exportToFAQ(questionId, payload) {
+  const { data } = await axisPrivate().post(`/api/admin/questions/${questionId}/export-faq`, payload)
+  return data
+}

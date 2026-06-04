@@ -12,7 +12,7 @@ function Footer() {
             </p>
             <ul className="space-y-3 text-[14px] text-text-secondary">
               <li>
-                <a href="#" className="inline-flex items-center gap-2 transition hover:text-text-primary">
+                <a href="/" className="inline-flex items-center gap-2 transition hover:text-text-primary">
                   <Home className="h-4 w-4" strokeWidth={2} />
                   Home
                 </a>
@@ -23,7 +23,7 @@ function Footer() {
                 </a>
               </li>
               <li>
-                <a href="https://vled.iitrpr.ac.in/" target="_blank" rel="noreferrer" className="transition hover:text-text-primary">
+                <a href="https://vicharanashala.ai/" target="_blank" rel="noreferrer" className="transition hover:text-text-primary">
                   VLED Lab
                 </a>
               </li>
@@ -55,14 +55,19 @@ function Footer() {
                 vled@iitrpr.ac.in
               </a>
             </div>
-            <div className="inline-flex items-start gap-3 text-[14px] leading-7 text-text-secondary">
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Indian+Institute+of+Technology+Ropar"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-start gap-3 text-[14px] leading-7 text-text-secondary transition hover:text-text-primary"
+            >
               <MapPin className="mt-1 h-4 w-4 text-text-muted" strokeWidth={2} />
               <address className="not-italic">
                 Indian Institute of Technology Ropar<br />
                 Rupnagar, Punjab – 140001<br />
                 India
               </address>
-            </div>
+            </a>
           </div>
         </div>
 
