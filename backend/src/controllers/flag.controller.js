@@ -1,5 +1,6 @@
 import Flag from '../models/flag.model.js'
 import Notification from '../models/notification.model.js'
+import UserProfile from '../models/user-profile.model.js'
 import User from '../models/user.model.js'
 import { getUserRoles } from '../services/role.service.js'
 import {
@@ -34,17 +35,21 @@ async function flagsWithTargets(flags) {
   return Promise.all(
     flags.map(async (flag) => {
       const target = await findContentTarget(flag.target_type, flag.target_id)
-      const [reporter, author] = await Promise.all([
+      const [reporter, reporterProfile, author, authorProfile] = await Promise.all([
         User.findOne({ user_id: flag.reported_by }).select('name').lean(),
+        UserProfile.findOne({ user_id: flag.reported_by }).select('display_name').lean(),
         target?.author_id
           ? User.findOne({ user_id: target.author_id }).select('name').lean()
+          : Promise.resolve(null),
+        target?.author_id
+          ? UserProfile.findOne({ user_id: target.author_id }).select('display_name').lean()
           : Promise.resolve(null),
       ])
       return {
         ...serialize(flag),
         target: serialize(target),
-        reported_by_name: reporter?.name || null,
-        author_name: author?.name || null,
+        reported_by_name: reporterProfile?.display_name || reporter?.name || null,
+        author_name: authorProfile?.display_name || author?.name || null,
       }
     }),
   )

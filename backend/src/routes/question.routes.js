@@ -3,6 +3,7 @@ import multer from 'multer'
 import { createAnswer } from '../controllers/answer.controller.js'
 import {
   acceptAnswer,
+  unacceptAnswer,
   createQuestion,
   deleteQuestion,
   downloadQuestionAttachment,
@@ -350,5 +351,6 @@ router.post('/:questionId/answers', checkRole('USER', 'RESOLVER', 'ADMIN'), crea
  *         description: Answer already accepted
  */
 router.post('/:questionId/accept-answer/:answerId', checkRole('USER', 'ADMIN'), acceptAnswer)
+router.delete('/:questionId/accept-answer/:answerId', checkRole('ADMIN'), unacceptAnswer)
 
 export default router

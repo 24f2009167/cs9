@@ -90,6 +90,7 @@ function RaiseQueryPage() {
 
   function handleFileChange(files) {
     const maxSize = 5 * 1024 * 1024
+    const maxTotalSize = 12 * 1024 * 1024
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg']
     const nextFiles = []
 
@@ -106,7 +107,15 @@ function RaiseQueryPage() {
     }
 
     if (nextFiles.length) {
-      setAttachments((current) => [...current, ...nextFiles].slice(0, 5))
+      setAttachments((current) => {
+        const combined = [...current, ...nextFiles].slice(0, 5)
+        const totalSize = combined.reduce((sum, file) => sum + file.size, 0)
+        if (totalSize > maxTotalSize) {
+          notifyError('Total attachments must be 12MB or smaller.')
+          return current
+        }
+        return combined
+      })
     }
   }
 
@@ -297,7 +306,7 @@ function RaiseQueryPage() {
                 >
                   Choose files
                 </button>
-                <span className="text-[12px] text-text-muted">PDF, JPG, PNG (Max 5MB each)</span>
+                <span className="text-[12px] text-text-muted">PDF, JPG, PNG (Max 5MB each, 12MB total)</span>
               </div>
               <input
                 ref={fileInputRef}

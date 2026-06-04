@@ -37,6 +37,10 @@ function normalizeTags(tags) {
 
 const ALLOWED_ATTACHMENT_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
 const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024
+// Attachments are stored as binary embedded in the Question document. MongoDB
+// caps a single document at 16MB, so the combined attachment payload must stay
+// safely under that, leaving headroom for the rest of the document.
+const MAX_TOTAL_ATTACHMENTS_SIZE = 12 * 1024 * 1024
 
 function sanitizeAttachmentsForResponse(attachments = [], questionId) {
   return (attachments || []).map((attachment) => ({
@@ -134,8 +138,17 @@ function isAdmin(req) {
 async function getRealNameByUserId(userIds) {
   const ids = [...new Set(userIds.filter(Boolean))]
   if (!ids.length) return {}
-  const users = await User.find({ user_id: { $in: ids } }).select('user_id name').lean()
-  return Object.fromEntries(users.map((u) => [u.user_id, u.name || 'Unknown']))
+  const [users, profiles] = await Promise.all([
+    User.find({ user_id: { $in: ids } }).select('user_id name').lean(),
+    UserProfile.find({ user_id: { $in: ids } }).select('user_id display_name').lean(),
+  ])
+  const nameById = Object.fromEntries(users.map((u) => [u.user_id, u.name || 'Unknown']))
+  for (const profile of profiles) {
+    if (profile.display_name) {
+      nameById[profile.user_id] = profile.display_name
+    }
+  }
+  return nameById
 }
 
 function canManage(req, question) {
@@ -220,6 +233,8 @@ export async function buildQuestionBaseFilter(req) {
 
   if (!isAdmin(req)) {
     filter.moderation_status = 'approved'
+  } else {
+    filter.moderation_status = { $ne: 'rejected' }
   }
 
   return filter
@@ -278,6 +293,16 @@ export async function createQuestion(req, res, next) {
           }
         })
       : []
+
+    // Guard the 16MB BSON document limit: reject if the combined attachment
+    // payload would push the question document over a safe threshold.
+    const totalAttachmentsSize = attachments.reduce(
+      (sum, a) => sum + (Buffer.isBuffer(a.data) ? a.data.length : 0),
+      0,
+    )
+    if (totalAttachmentsSize > MAX_TOTAL_ATTACHMENTS_SIZE) {
+      throw createHttpError(400, 'Total attachments must be 12MB or smaller')
+    }
 
     question = await model.create({
       title: req.body.title,
@@ -668,6 +693,40 @@ export async function acceptAnswer(req, res, next) {
     })
 
     res.json({ success: true, message: 'Answer accepted' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/** Owner/admin un-accepts the accepted answer (only allowed when question is reopened). */
+export async function unacceptAnswer(req, res, next) {
+  try {
+    const [question, answer] = await Promise.all([
+      Question.findOne({ question_id: req.params.questionId }),
+      Answer.findOne({
+        answer_id: req.params.answerId,
+        question_id: req.params.questionId,
+        is_deleted: { $ne: true },
+      }),
+    ])
+
+    if (!question || !answer) {
+      throw createHttpError(404, 'Question or answer not found')
+    }
+    if (!canManage(req, question)) {
+      throw createHttpError(403, 'Forbidden')
+    }
+    if (question.status === 'closed') {
+      throw createHttpError(409, 'Reopen the question before removing the accepted answer.')
+    }
+    if (!answer.is_accepted) {
+      throw createHttpError(409, 'This answer is not currently accepted.')
+    }
+
+    answer.is_accepted = false
+    await answer.save()
+
+    res.json({ success: true, message: 'Answer unaccepted' })
   } catch (error) {
     next(error)
   }
