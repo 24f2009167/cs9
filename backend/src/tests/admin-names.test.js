@@ -23,7 +23,7 @@ test('flagsWithTargets retrieves display name from UserProfile over User name', 
     userFindCount++
     const userId = query.user_id
     return {
-      select(fields) {
+      select(_fields) {
         return {
           lean() {
             if (userId === 'reporter-123') {
@@ -45,7 +45,7 @@ test('flagsWithTargets retrieves display name from UserProfile over User name', 
     profileFindCount++
     const userId = query.user_id
     return {
-      select(fields) {
+      select(_fields) {
         return {
           lean() {
             if (userId === 'reporter-123') {

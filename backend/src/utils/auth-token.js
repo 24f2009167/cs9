@@ -48,8 +48,8 @@ export function verifyAuthToken(token) {
 
   try {
     payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString())
-  } catch (_error) {
-    throw new Error('Invalid token')
+  } catch (error) {
+    throw new Error('Invalid token', { cause: error })
   }
 
   if (!payload.exp || payload.exp <= Math.floor(Date.now() / 1000)) {

@@ -26,7 +26,6 @@ import {
 } from '../services/platform-settings.service.js'
 import {
   buildLeaderboardRows,
-  computeScore,
   getContributorStats,
 } from '../services/leaderboard.service.js'
 import {
@@ -220,7 +219,7 @@ export async function getAdminDashboard(req, res, next) {
       },
       charts: {
         resolutionSpeed: timeToResolveRaw.map(b => {
-          let label = ''
+          let label
           if (b._id === 0) label = '< 1h'
           else if (b._id === 1) label = '1-4h'
           else if (b._id === 4) label = '4-24h'

@@ -33,7 +33,8 @@ interface QuestionCardProps {
 // ─── Component ─────────────────────────────────────────────────────────────
 
 const QuestionCard: FC<QuestionCardProps> = ({ query, onUpvote, onClick }) => {
-  const { color: statusColor } = STATUS_CONFIG[query.status] ?? STATUS_CONFIG.Active
+  // STATUS_CONFIG has no 'Closed' key; the ?? fallback covers it at runtime.
+  const { color: statusColor } = STATUS_CONFIG[query.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.Active
   const StatusIcon =
     query.status === 'Active' ? CheckCircle
     : query.status === 'In Progress' ? Clock

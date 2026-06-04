@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    /* Vite handles transpilation; tsc is type-check only. */
+    "noEmit": true,
+
+    /* Mixed codebase: resolve imports from plain .js files but only
+       type-check the .ts/.tsx sources (checkJs stays off). */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* Strictness — this is the gap we're closing for the .ts/.tsx files. */
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Path alias, mirrors vite.config.js `resolve.alias`.
+       (No baseUrl — paths resolve relative to this file in TS 6+.) */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

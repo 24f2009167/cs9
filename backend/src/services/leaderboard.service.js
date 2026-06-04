@@ -3,7 +3,6 @@ import Comment from '../models/comment.model.js'
 import Notification from '../models/notification.model.js'
 import Question from '../models/question.model.js'
 import UserProfile from '../models/user-profile.model.js'
-import User from '../models/user.model.js'
 
 function keyed(rows, mapValue) {
   return Object.fromEntries(rows.map((row) => [row._id, mapValue(row)]))

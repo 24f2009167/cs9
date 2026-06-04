@@ -1,4 +1,3 @@
-/* global __PROJECT_NAME__, __PROJECT_OWNER__ */
 import { Home, Mail, MapPin } from 'lucide-react'
 
 function Footer() {

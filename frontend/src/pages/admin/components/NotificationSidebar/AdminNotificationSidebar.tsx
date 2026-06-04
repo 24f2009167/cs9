@@ -2,6 +2,15 @@ import { Fragment } from 'react'
 import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react'
 import { Bell, CheckCheck, X, ExternalLink } from 'lucide-react'
 import { timeAgo } from '@/pages/user/service'
+import type { AppNotification } from '@/pages/user/components/NotifSidebar/NotificationSidebar'
+
+interface AdminNotificationSidebarProps {
+  isOpen: boolean
+  onClose: () => void
+  notifications?: AppNotification[]
+  onMarkAllRead?: () => void
+  onNavigate: (link: string) => void
+}
 
 function AdminNotificationSidebar({
   isOpen,
@@ -9,10 +18,10 @@ function AdminNotificationSidebar({
   notifications = [],
   onMarkAllRead,
   onNavigate,
-}) {
+}: AdminNotificationSidebarProps) {
   const unread = notifications.filter(n => !n.is_read).length
 
-  function handleItemClick(n) {
+  function handleItemClick(n: AppNotification) {
     if (!n.link) return
     if (n.link.startsWith('http')) {
       window.open(n.link, '_blank', 'noopener,noreferrer')

@@ -23,7 +23,7 @@ function makeRes() {
   }
 }
 
-test('exportQuestionToFAQ validation errors for missing title/body', async (t) => {
+test('exportQuestionToFAQ validation errors for missing title/body', async (_t) => {
   let captured
   const res = makeRes()
   await exportQuestionToFAQ(makeReq({ body: {} }), res, (e) => { captured = e })

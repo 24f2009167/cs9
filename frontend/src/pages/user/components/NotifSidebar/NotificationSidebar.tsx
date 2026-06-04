@@ -4,16 +4,34 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/re
 import { Bell, CheckCheck, X, ExternalLink } from 'lucide-react'
 import { timeAgo } from '../../service'
 
+export interface AppNotification {
+  notification_id?: string
+  id?: string
+  is_read?: boolean
+  link?: string
+  body?: string
+  message?: string
+  title?: string
+  created_at?: string
+}
+
+interface NotificationSidebarProps {
+  isOpen: boolean
+  onClose: () => void
+  notifications?: AppNotification[]
+  onMarkAllRead?: () => void
+}
+
 function NotificationSidebar({
   isOpen,
   onClose,
   notifications = [],
   onMarkAllRead,
-}) {
+}: NotificationSidebarProps) {
   const navigate = useNavigate()
   const unread = notifications.filter(n => !n.is_read).length
 
-  function handleItemClick(n) {
+  function handleItemClick(n: AppNotification) {
     if (!n.link) return
     if (n.link.startsWith('http')) {
       window.open(n.link, '_blank', 'noopener,noreferrer')

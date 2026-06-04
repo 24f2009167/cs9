@@ -18,7 +18,7 @@ export const questionCreationLimiter = rateLimit({
     success: false,
     message: 'Too many questions created. Please wait before posting again.',
   },
-  skip: (req) => {
+  skip: () => {
     // Only apply to POST /api/questions
     return false // always apply; route-level application makes this a no-op elsewhere
   },

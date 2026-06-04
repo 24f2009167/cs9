@@ -1,27 +1,39 @@
-# Husky pre-commit hook: enforce ESLint on staged frontend files.
+# Husky pre-commit hook: enforce ESLint on staged files.
 # Auto-installed via the frontend "prepare" script on `npm install`.
-# Lints only staged frontend JS/TS files, so non-frontend commits aren't blocked.
+# Lints staged frontend (js/jsx/ts/tsx) and backend (js) files independently, so
+# a commit touching only one side isn't slowed by the other.
 # Bypass in emergencies with: git commit --no-verify
 
-# Staged (Added/Copied/Modified/Renamed) JS/TS files under frontend/
-staged=$(git diff --cached --name-only --diff-filter=ACMR \
-  | grep -E '^frontend/.*\.(js|jsx|ts|tsx)$' || true)
+changed=$(git diff --cached --name-only --diff-filter=ACMR)
 
-[ -z "$staged" ] && exit 0
+# Staged (Added/Copied/Modified/Renamed) source files per workspace.
+fe_staged=$(printf '%s\n' "$changed" | grep -E '^frontend/.*\.(js|jsx|ts|tsx)$' || true)
+be_staged=$(printf '%s\n' "$changed" | grep -E '^backend/.*\.js$' || true)
 
-# Strip the leading "frontend/" so paths are relative to the ESLint config root.
-rel=$(printf '%s\n' "$staged" | sed 's#^frontend/##')
+[ -z "$fe_staged$be_staged" ] && exit 0
 
-echo "▶ pre-commit: linting staged frontend file(s)…"
-cd frontend || {
-  echo "✖ pre-commit: could not enter frontend/"; exit 1;
-}
+status=0
 
-# shellcheck disable=SC2086  # intentional word-splitting of the file list
-if ! npx --no-install eslint $rel; then
+if [ -n "$fe_staged" ]; then
+  # Strip the leading "frontend/" so paths are relative to the ESLint config root.
+  fe_rel=$(printf '%s\n' "$fe_staged" | sed 's#^frontend/##')
+  echo "▶ pre-commit: linting staged frontend file(s)…"
+  # shellcheck disable=SC2086  # intentional word-splitting of the file list
+  ( cd frontend && npx --no-install eslint $fe_rel ) || status=1
+fi
+
+if [ -n "$be_staged" ]; then
+  # Strip the leading "backend/" so paths are relative to the ESLint config root.
+  be_rel=$(printf '%s\n' "$be_staged" | sed 's#^backend/##')
+  echo "▶ pre-commit: linting staged backend file(s)…"
+  # shellcheck disable=SC2086  # intentional word-splitting of the file list
+  ( cd backend && npx --no-install eslint $be_rel ) || status=1
+fi
+
+if [ "$status" -ne 0 ]; then
   echo ""
-  echo "✖ ESLint failed. Fix the errors above (try: cd frontend && npx eslint --fix <files>),"
-  echo "  re-stage, and commit again. To bypass in an emergency: git commit --no-verify"
+  echo "✖ ESLint failed. Fix the errors above (try: npx eslint --fix <files> in the"
+  echo "  relevant workspace), re-stage, and commit again. Bypass: git commit --no-verify"
   exit 1
 fi
 
