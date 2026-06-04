@@ -609,6 +609,40 @@ export async function acceptAnswer(req, res, next) {
   }
 }
 
+/** Owner/admin un-accepts the accepted answer (only allowed when question is reopened). */
+export async function unacceptAnswer(req, res, next) {
+  try {
+    const [question, answer] = await Promise.all([
+      Question.findOne({ question_id: req.params.questionId }),
+      Answer.findOne({
+        answer_id: req.params.answerId,
+        question_id: req.params.questionId,
+        is_deleted: { $ne: true },
+      }),
+    ])
+
+    if (!question || !answer) {
+      throw createHttpError(404, 'Question or answer not found')
+    }
+    if (!canManage(req, question)) {
+      throw createHttpError(403, 'Forbidden')
+    }
+    if (question.status === 'closed') {
+      throw createHttpError(409, 'Reopen the question before removing the accepted answer.')
+    }
+    if (!answer.is_accepted) {
+      throw createHttpError(409, 'This answer is not currently accepted.')
+    }
+
+    answer.is_accepted = false
+    await answer.save()
+
+    res.json({ success: true, message: 'Answer unaccepted' })
+  } catch (error) {
+    next(error)
+  }
+}
+
 /** Owner/admin marks their question resolved (closed) or reopens it. */
 export async function resolveQuestion(req, res, next) {
   try {

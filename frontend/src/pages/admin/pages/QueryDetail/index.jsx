@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   ArrowLeft, Tag, Pin, Lock, CheckCircle, Zap, ChevronUp, MessageSquare,
-  User, Clock, Loader, ShieldCheck, VenetianMask, Eye, Award, Trash2, AlertTriangle, Send,
+  User, Clock, Loader, ShieldCheck, VenetianMask, Eye, Award, Trash2, AlertTriangle, Send, RotateCcw,
 } from 'lucide-react'
-import { fetchQuestionDetail } from '../../../user/service'
+import { fetchQuestionDetail, unacceptAnswer } from '../../../user/service'
 import { adminResolveQuery, exportToFAQ, fetchTags } from '../../service'
 import { notifyError, notifySuccess } from '../../../../lib/notify'
 import useAuthStore from '../../../../store/useAuthStore'
@@ -94,9 +94,10 @@ function modState(doc) {
   return 'visible'
 }
 
-function AnswerCard({ answer, comments }) {
+function AnswerCard({ answer, comments, questionStatus, onUnaccept }) {
   const score = (answer.upvotes ?? 0) - (answer.downvotes ?? 0)
   const state = modState(answer)
+  const canUnaccept = answer.is_accepted && questionStatus !== 'closed'
   return (
     <div className="rounded-xl border border-border-light bg-bg-card p-5">
       <div className="flex items-start gap-4">
@@ -165,6 +166,19 @@ function AnswerCard({ answer, comments }) {
                   </div>
                 )
               })}
+            </div>
+          )}
+
+          {/* Unaccept button — admin only, visible when answer is accepted and question is reopened */}
+          {canUnaccept && (
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={onUnaccept}
+                className="flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-700 transition hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+              >
+                <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} /> UNACCEPT
+              </button>
             </div>
           )}
         </div>
@@ -287,6 +301,16 @@ function AdminQueryDetailView({ queryId, onBack }) {
       notifyError(err?.response?.data?.message || 'Could not post comment.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleUnaccept(answerId) {
+    try {
+      await unacceptAnswer(queryId, answerId)
+      notifySuccess('Resolution removed.')
+      await load()
+    } catch (err) {
+      notifyError(err?.response?.data?.message || 'Could not remove resolution.')
     }
   }
 
@@ -537,7 +561,7 @@ function AdminQueryDetailView({ queryId, onBack }) {
         ) : (
           <div className="space-y-3">
             {answers.map(a => (
-              <AnswerCard key={a.answer_id} answer={a} comments={commentsByAnswer[a.answer_id] || []} />
+              <AnswerCard key={a.answer_id} answer={a} comments={commentsByAnswer[a.answer_id] || []} questionStatus={data?.question?.status} onUnaccept={() => handleUnaccept(a.answer_id)} />
             ))}
           </div>
         )}

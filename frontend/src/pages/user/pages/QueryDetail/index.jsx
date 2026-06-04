@@ -10,7 +10,7 @@ import Button from '../../../../components/Button/Button'
 import Modal from '../../../../components/Modal/Modal'
 import {
   fetchQuestionDetail, fetchQuestions, postAnswer, voteAnswer, reportContent, postComment,
-  resolveQuestion, acceptAnswer, recordQuestionView, updateComment, deleteComment,
+  resolveQuestion, acceptAnswer, unacceptAnswer, recordQuestionView, updateComment, deleteComment,
   updateAnswer, deleteAnswer,
 } from '../../service'
 import { notifySuccess, notifyError } from '../../../../lib/notify'
@@ -221,6 +221,16 @@ function QueryDetailPage() {
     }
   }
 
+  async function handleUnacceptAnswer(answerId) {
+    try {
+      await unacceptAnswer(queryId, answerId)
+      notifySuccess('Resolution removed.')
+      await refresh()
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not remove resolution.')
+    }
+  }
+
   async function handlePostReply() {
     if (!reply.trim()) {
       notifyError('Write something before posting.')
@@ -402,7 +412,9 @@ function QueryDetailPage() {
                   score={(ans.upvotes ?? 0) - (ans.downvotes ?? 0)}
                   myVote={ans.my_vote ?? 0}
                   canAccept={isOwner && !hasAcceptedAnswer && !hidden && ans.author_id !== user?.userId}
+                  canUnaccept={user?.role === 'ADMIN' && ans.is_accepted && !isResolved}
                   onAccept={() => handleAcceptAnswer(ans.answer_id)}
+                  onUnaccept={() => handleUnacceptAnswer(ans.answer_id)}
                   onVoteUp={() => handleVote(ans.answer_id, 'up')}
                   onVoteDown={() => handleVote(ans.answer_id, 'down')}
                   authorRole={ans.author_role}
@@ -571,7 +583,8 @@ function QueryDetailPage() {
 // ── Thread item (OP or answer) ──────────────────────────────────────────────
 function ThreadItem({
   authorName, isSelf, authorRole, date, body, isOriginal, accepted, score, myVote = 0,
-  moderationState = 'visible', canAccept = false, onAccept, onVoteUp, onVoteDown, onReport,
+  moderationState = 'visible', canAccept = false, canUnaccept = false, onAccept, onUnaccept,
+  onVoteUp, onVoteDown, onReport,
   onEdit, onDelete, createdAt, children,
 }) {
   const initials = initialsOf(authorName)
@@ -702,6 +715,17 @@ function ThreadItem({
               <div />
             )}
             <div className="flex items-center gap-4">
+              {/* Owner: unaccept this answer (only when question is reopened) */}
+              {!isOriginal && canUnaccept && (
+                <button
+                  type="button"
+                  onClick={onUnaccept}
+                  className="flex items-center gap-1.5 text-[12px] font-bold text-warning transition hover:text-danger"
+                  title="Remove accepted resolution"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} /> UNACCEPT
+                </button>
+              )}
               {/* Owner: accept this answer as the resolution */}
               {!isOriginal && canAccept && (
                 <button

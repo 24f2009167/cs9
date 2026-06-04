@@ -146,6 +146,11 @@ export async function acceptAnswer(questionId, answerId) {
   return data
 }
 
+export async function unacceptAnswer(questionId, answerId) {
+  const { data } = await axisPrivate().delete(`/api/questions/${questionId}/accept-answer/${answerId}`)
+  return data
+}
+
 export async function postComment(answerId, body, parentId = null) {
   const { data } = await axisPrivate().post('/api/comments', {
     targetType: 'answer',
