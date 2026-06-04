@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { Camera, Save, Lock, Mail, User, Shield, Loader } from 'lucide-react'
+import { Camera, Save, Lock, Mail, User, Shield, Loader, Eye, EyeOff } from 'lucide-react'
 import useAuthStore from '../../../../store/useAuthStore'
 import { fetchProfile, updateProfile, changePassword } from '../../service'
 import { notifySuccess, notifyError } from '../../../../lib/notify'
@@ -12,6 +12,8 @@ function ProfileSettingsPage() {
   const [name, setName]                       = useState(user?.name || '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword]         = useState('')
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
   const [loading, setLoading]                 = useState(true)
   const [saving, setSaving]                   = useState(false)
 
@@ -157,12 +159,20 @@ function ProfileSettingsPage() {
                 <div className="relative flex items-center">
                   <Lock className="absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                   <input
-                    type="password"
+                    type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
                     placeholder="Enter current password"
-                    className={inputBase}
+                    className={`${inputBase} pr-12`}
                   />
+                  <button
+                    type="button"
+                    aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    onClick={() => setShowCurrentPassword(prev => !prev)}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-5 w-5" strokeWidth={1.8} /> : <Eye className="h-5 w-5" strokeWidth={1.8} />}
+                  </button>
                 </div>
               </div>
               <div className="flex flex-col">
@@ -170,12 +180,20 @@ function ProfileSettingsPage() {
                 <div className="relative flex items-center">
                   <Lock className="absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
                   <input
-                    type="password"
+                    type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     placeholder="Enter new password"
-                    className={inputBase}
+                    className={`${inputBase} pr-12`}
                   />
+                  <button
+                    type="button"
+                    aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    onClick={() => setShowNewPassword(prev => !prev)}
+                  >
+                    {showNewPassword ? <EyeOff className="h-5 w-5" strokeWidth={1.8} /> : <Eye className="h-5 w-5" strokeWidth={1.8} />}
+                  </button>
                 </div>
               </div>
             </div>
