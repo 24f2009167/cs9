@@ -255,25 +255,6 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate, onOpen
             {formatNumber(metrics.sparks?.total)}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onNavigate?.('queriesManagement', { state: { hasApproval: 'approved' } })}
-          className="rounded-lg border border-border-light bg-bg-card p-4 text-left transition hover:border-brand hover:shadow-md"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">
-                Approval received
-              </p>
-              <p className="mt-2 text-[22px] font-semibold text-text-primary">
-                {formatNumber(metrics.approvedCount?.total || 0)}
-              </p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <CheckCircle className="h-4 w-4" strokeWidth={1.8} />
-            </div>
-          </div>
-        </button>
       </div>
 
       <div data-tour="admin-charts" className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
