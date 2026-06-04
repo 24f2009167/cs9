@@ -2,9 +2,14 @@ import Answer from '../models/answer.model.js'
 import Comment from '../models/comment.model.js'
 import Notification from '../models/notification.model.js'
 import Question from '../models/question.model.js'
+import FAQQuestion from '../models/faq.model.js'
+import { QuestionView } from '../models/question_view.model.js'
+
 import User from '../models/user.model.js'
 import UserProfile from '../models/user-profile.model.js'
+import { randomUUID } from 'node:crypto'
 import Vote from '../models/vote.model.js'
+import { publishDomainEvent } from '../services/domain-events.service.js'
 import { awardSpark, reserveBounty } from '../services/spark.service.js'
 import {
   createHttpError,
@@ -25,9 +30,21 @@ function slugifyTag(tag) {
 function normalizeTags(tags) {
   const cleanedTags = Array.isArray(tags)
     ? tags.map((tag) => String(tag).trim()).filter(Boolean)
-    : []
+    : (typeof tags === 'string' ? [tags.trim()].filter(Boolean) : [])
 
   return cleanedTags.length > 0 ? cleanedTags : ['General']
+}
+
+const ALLOWED_ATTACHMENT_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg'])
+const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024
+
+function sanitizeAttachmentsForResponse(attachments = [], questionId) {
+  return (attachments || []).map((attachment) => ({
+    attachment_id: attachment.attachment_id,
+    file_name: attachment.file_name,
+    mime_type: attachment.mime_type,
+    download_url: `/api/questions/${questionId}/attachments/${attachment.attachment_id}`,
+  }))
 }
 
 const GENERIC_FAQ_TAGS = new Set(['faq', 'internship', 'vins'])
@@ -61,13 +78,14 @@ async function getDisplayNameByUserId(userIds) {
 
 export async function listPublishedFAQs(req, res, next) {
   try {
-    const faqs = await Question.find({
+    const faqs = await FAQQuestion.find({
       kind: 'faq',
       status: 'published',
       visibility: 'public',
     })
       .sort({ is_pinned: -1, title: 1 })
       .lean()
+
 
     const groupedByTag = new Map()
 
@@ -134,6 +152,79 @@ export function getQuestionStatusFilter(status) {
   return status || undefined
 }
 
+export async function downloadQuestionAttachment(req, res, next) {
+  try {
+    const question = await Question.findOne({ question_id: req.params.questionId })
+    if (!question) {
+      throw createHttpError(404, 'Question not found')
+    }
+
+    const attachment = (question.attachments || []).find((a) => a.attachment_id === req.params.attachmentId)
+    if (!attachment) {
+      throw createHttpError(404, 'Attachment not found')
+    }
+
+    const fileData = Buffer.isBuffer(attachment.data)
+      ? attachment.data
+      : (attachment.data?.buffer || Buffer.from(attachment.data || []))
+
+    res.setHeader('Content-Type', attachment.mime_type || 'application/octet-stream')
+    if (req.query.preview === 'true') {
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.file_name}"`)
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.file_name}"`)
+    }
+    res.send(fileData)
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * Builds the shared question query filter — kind, tag, keyword search (incl.
+ * answer bodies), the `my=1` ownership scope, and the non-admin moderation gate.
+ * Callers layer on their own status / pagination / soft-delete handling. Shared
+ * by listQuestions and getQuestionCounts so the two can never drift apart.
+ */
+export async function buildQuestionBaseFilter(req) {
+  const filter = {}
+
+  // Default to 'community' when kind is not specified. This is a breaking change
+  // from previous behaviour where unspecified kind returned all kinds. Pass ?kind=faq
+  // explicitly to include FAQs, or ?kind=community (or omit) for community questions only.
+  filter.kind = req.query.kind || 'community'
+
+  if (req.query.tag) {
+    // Selected categories filter over tags (comma-separated → match any)
+    const tags = String(req.query.tag).split(',').map((t) => t.trim()).filter(Boolean)
+    if (tags.length) {
+      filter.tags = tags.length > 1 ? { $in: tags } : tags[0]
+    }
+  }
+
+  if (req.query.search) {
+    // Keyword search over question text (title/body) and answer text
+    const search = new RegExp(escapeRegex(String(req.query.search)), 'i')
+    const answerQuestionIds = await Answer.find({ body: search }).distinct('question_id')
+    filter.$or = [
+      { title: search },
+      { body: search },
+      { question_id: { $in: answerQuestionIds } },
+    ]
+  }
+
+  // Support ?my=1 to fetch only the current user's questions
+  if (req.query.my === '1') {
+    filter.author_id = req.user.userId
+  }
+
+  if (!isAdmin(req)) {
+    filter.moderation_status = 'approved'
+  }
+
+  return filter
+}
+
 export async function createQuestion(req, res, next) {
   let question
 
@@ -144,13 +235,59 @@ export async function createQuestion(req, res, next) {
       throw createHttpError(400, 'Spark bounty must be a non-negative integer')
     }
 
-    question = await Question.create({
+    const extraFields = {}
+    if (isAdmin(req)) {
+      if (req.body.kind) {
+        extraFields.kind = req.body.kind
+        if (req.body.kind === 'faq') {
+          extraFields.status = req.body.status || 'published'
+          extraFields.moderation_status = 'approved'
+          extraFields.visibility = 'public'
+        }
+      }
+      if (req.body.status) {
+        extraFields.status = req.body.status
+      }
+    }
+
+    const model = (isAdmin(req) && req.body.kind === 'faq') ? FAQQuestion : Question
+    const rawAttachments = (req.files && req.files.length) ? req.files : req.body.attachments
+    const attachments = Array.isArray(rawAttachments)
+      ? rawAttachments.map((file) => {
+          if (file.buffer) {
+            const mimeType = file.mimetype
+            if (!ALLOWED_ATTACHMENT_TYPES.has(mimeType)) {
+              throw createHttpError(400, 'Only PDF, JPG and PNG attachments are allowed')
+            }
+            if (file.size > MAX_ATTACHMENT_SIZE) {
+              throw createHttpError(400, 'Attachments must be 5MB or smaller')
+            }
+            return {
+              attachment_id: file.attachment_id || randomUUID(),
+              file_name: file.originalname || file.file_name,
+              mime_type: mimeType,
+              data: file.buffer,
+            }
+          }
+
+          return {
+            attachment_id: file.attachment_id || randomUUID(),
+            file_name: file.file_name,
+            mime_type: file.mime_type,
+            data: file.data ? Buffer.from(file.data) : undefined,
+          }
+        })
+      : []
+
+    question = await model.create({
       title: req.body.title,
       body: req.body.body,
-      tags: req.body.tags,
+      tags: normalizeTags(req.body.tags),
+      attachments,
       spark_bounty: sparkBounty,
-      is_anonymous: req.body.isAnonymous === true,
+      is_anonymous: req.body.isAnonymous === true || req.body.is_anonymous === true,
       author_id: req.user.userId,
+      ...extraFields,
     })
 
     await reserveBounty(req.user.userId, sparkBounty, question.question_id)
@@ -164,12 +301,18 @@ export async function createQuestion(req, res, next) {
     res.status(201).json({
       success: true,
       questionId: question.question_id,
+      question: {
+        ...question.toObject(),
+        attachments: sanitizeAttachmentsForResponse(question.attachments, question.question_id),
+      },
       message: 'Question created',
     })
   } catch (error) {
     if (question && error.statusCode === 403) {
-      await Question.deleteOne({ question_id: question.question_id })
+      const model = question.kind === 'faq' ? FAQQuestion : Question
+      await model.deleteOne({ question_id: question.question_id })
     }
+
     next(error)
   }
 }
@@ -177,32 +320,11 @@ export async function createQuestion(req, res, next) {
 export async function listQuestions(req, res, next) {
   try {
     const { page, limit, skip } = getPagination(req.query)
-    const filter = {}
+    const filter = await buildQuestionBaseFilter(req)
 
-    if (req.query.kind) {
-      filter.kind = req.query.kind
-    }
-
-    if (req.query.tag) {
-      // Selected categories filter over tags (comma-separated → match any)
-      const tags = String(req.query.tag).split(',').map((t) => t.trim()).filter(Boolean)
-      if (tags.length) {
-        filter.tags = tags.length > 1 ? { $in: tags } : tags[0]
-      }
-    }
     const statusFilter = getQuestionStatusFilter(req.query.status)
     if (statusFilter) {
       filter.status = statusFilter
-    }
-    if (req.query.search) {
-      // Keyword search over question text (title/body) and answer text
-      const search = new RegExp(escapeRegex(String(req.query.search)), 'i')
-      const answerQuestionIds = await Answer.find({ body: search }).distinct('question_id')
-      filter.$or = [
-        { title: search },
-        { body: search },
-        { question_id: { $in: answerQuestionIds } },
-      ]
     }
     if (req.query.createdAfter) {
       const since = new Date(req.query.createdAfter)
@@ -211,17 +333,19 @@ export async function listQuestions(req, res, next) {
       }
     }
 
-    // Support ?my=1 to fetch only the current user's questions
-    if (req.query.my === '1') {
-      filter.author_id = req.user.userId
-    }
-
     if (req.query.id) {
       filter.question_id = req.query.id
     }
 
+    if (req.query.hasExpertAnswer === 'true') {
+      filter.has_expert_answer = true
+    } else if (req.query.hasExpertAnswer === 'false') {
+      filter.has_expert_answer = false
+    }
+
     if (!isAdmin(req)) {
-      filter.moderation_status = 'approved'
+      // moderation_status is applied in buildQuestionBaseFilter; resolve the
+      // soft-delete visibility against whatever status filter is in effect.
       if (filter.status === 'removed') {
         filter.status = { $exists: false }
       } else if (!filter.status) {
@@ -230,10 +354,12 @@ export async function listQuestions(req, res, next) {
     }
 
     const sort = req.query.sort === 'trending' ? { answer_count: -1, upvotes: -1 } : { created_at: -1 }
+    const model = filter.kind === 'faq' ? FAQQuestion : Question
     const [questions, total] = await Promise.all([
-      Question.find(filter).sort(sort).skip(skip).limit(limit).lean(),
-      Question.countDocuments(filter),
+      model.find(filter).sort(sort).skip(skip).limit(limit).lean(),
+      model.countDocuments(filter),
     ])
+
 
     const nameById = await getDisplayNameByUserId(questions.map((q) => q.author_id))
 
@@ -254,6 +380,7 @@ export async function listQuestions(req, res, next) {
       success: true,
       questions: questions.map((q) => ({
         ...q,
+        attachments: sanitizeAttachmentsForResponse(q.attachments, q.question_id),
         author_name: isAdmin(req) ? (realNameById[q.author_id] || nameById[q.author_id] || 'User') :
                      (q.is_anonymous ? 'Anonymous' : nameById[q.author_id] || 'User'),
         hasVoted: upvotedSet.has(q.question_id),
@@ -293,7 +420,11 @@ export async function listQuestionTags(req, res, next) {
 
 export async function getQuestionById(req, res, next) {
   try {
-    const question = await Question.findOne({ question_id: req.params.questionId })
+    let question = await Question.findOne({ question_id: req.params.questionId })
+    if (!question) {
+      question = await FAQQuestion.findOne({ question_id: req.params.questionId })
+    }
+
 
     if (
       !question ||
@@ -302,11 +433,6 @@ export async function getQuestionById(req, res, next) {
     ) {
       throw createHttpError(404, 'Question not found')
     }
-
-    await Question.updateOne(
-      { question_id: question.question_id },
-      { $inc: { view_count: 1 } },
-    )
 
     const includeAnswers = req.query.includeAnswers !== 'false'
     const includeComments = req.query.includeComments !== 'false'
@@ -362,6 +488,7 @@ export async function getQuestionById(req, res, next) {
       success: true,
       question: {
         ...questionObj,
+        attachments: sanitizeAttachmentsForResponse(questionObj.attachments, questionObj.question_id),
         author_name: isAdmin(req)
         ? (realNameById[questionObj.author_id] || nameById[questionObj.author_id] || 'User')
         : (questionObj.is_anonymous ? 'Anonymous' : nameById[questionObj.author_id] || 'User'),
@@ -374,13 +501,57 @@ export async function getQuestionById(req, res, next) {
   }
 }
 
+export async function recordQuestionView(req, res, next) {
+  try {
+    const { questionId } = req.params
+    const { userId } = req.user
+
+    // Don't count the author's own views
+    const question = await Question.findOne({ question_id: questionId })
+    if (!question) {
+      throw createHttpError(404, 'Question not found')
+    }
+    if (question.author_id === userId) {
+      return res.json({ success: true, viewed: false, reason: 'author' })
+    }
+
+    // Upsert — only inserts if (question_id, user_id) pair doesn't exist.
+    // Second+ views match the existing row and insert nothing.
+    const result = await QuestionView.updateOne(
+      { question_id: questionId, user_id: userId },
+      { $setOnInsert: { viewed_at: new Date() } },
+      { upsert: true },
+    )
+
+    // Bump the cached count ONLY when this call actually inserted a new row —
+    // i.e. the user's first view. Repeat views match the existing row
+    // (upsertedCount === 0) and must not increment.
+    const isNewView = result.upsertedCount > 0
+    if (isNewView) {
+      await Question.updateOne(
+        { question_id: questionId },
+        { $inc: { view_count: 1 } },
+      )
+    }
+
+    res.json({ success: true, viewed: isNewView })
+  } catch (error) {
+    next(error)
+  }
+}
 export async function updateQuestion(req, res, next) {
   try {
-    const question = await Question.findOne({ question_id: req.params.questionId })
+    let question = await Question.findOne({ question_id: req.params.questionId })
+
+    if (!question) {
+      question = await FAQQuestion.findOne({ question_id: req.params.questionId })
+    }
 
     if (!question) {
       throw createHttpError(404, 'Question not found')
     }
+
+
     if (!canManage(req, question)) {
       throw createHttpError(403, 'Forbidden')
     }
@@ -388,7 +559,11 @@ export async function updateQuestion(req, res, next) {
       throw createHttpError(409, 'Question locked or resolved')
     }
 
-    for (const field of ['title', 'body', 'tags']) {
+    const whitelistedFields = ['title', 'body', 'tags']
+    if (isAdmin(req)) {
+      whitelistedFields.push('kind', 'status', 'visibility', 'moderation_status')
+    }
+    for (const field of whitelistedFields) {
       if (req.body[field] !== undefined) {
         question[field] = req.body[field]
       }
@@ -403,11 +578,16 @@ export async function updateQuestion(req, res, next) {
 
 export async function deleteQuestion(req, res, next) {
   try {
-    const question = await Question.findOne({ question_id: req.params.questionId })
+    let question = await Question.findOne({ question_id: req.params.questionId })
+
+    if (!question) {
+      question = await FAQQuestion.findOne({ question_id: req.params.questionId })
+    }
 
     if (!question) {
       throw createHttpError(404, 'Question not found')
     }
+
     if (!canManage(req, question)) {
       throw createHttpError(403, 'Forbidden')
     }
@@ -417,7 +597,7 @@ export async function deleteQuestion(req, res, next) {
 
     question.status = 'removed'
     question.moderation_status = 'rejected'
-    question.removal_reason = req.body.reason || ''
+    question.removal_reason = req.body?.reason || ''
     await question.save()
 
     res.json({ success: true, message: 'Question deleted' })
@@ -540,29 +720,88 @@ export async function voteQuestion(req, res, next) {
 
     if (existingVote) {
       await existingVote.deleteOne()
-      await Question.updateOne(
-        { question_id: questionId },
-        { $inc: { upvotes: -1 } },
-      )
     } else {
-      await Vote.create({
-        user_id: userId,
-        target_type: 'question',
-        target_id: question.question_id,
-        value: 1,
-      })
-      await Question.updateOne(
-        { question_id: questionId },
-        { $inc: { upvotes: 1 } },
-      )
+      try {
+        await Vote.create({
+          user_id: userId,
+          target_type: 'question',
+          target_id: question.question_id,
+          value: 1,
+        })
+      } catch (error) {
+        // Concurrent double-click can race past the findOne and hit the
+        // unique {user_id, target_type, target_id} index. The vote already
+        // exists, so treat it as an idempotent no-op rather than a 500.
+        if (error?.code !== 11000) throw error
+      }
     }
 
-    const updated = await Question.findOne({ question_id: questionId }).select('upvotes').lean()
+    // Recompute the cached counter from the Vote collection (the source of
+    // truth) instead of a blind $inc. This is self-healing: any prior drift
+    // is corrected on the next vote, and it works without a replica set.
+    const upvotes = await Vote.countDocuments({
+      target_type: 'question',
+      target_id: question.question_id,
+      value: 1,
+    })
+    await Question.updateOne(
+      { question_id: questionId },
+      { $set: { upvotes } },
+    )
+
+    publishDomainEvent('question.vote.changed', {
+      questionId: question.question_id,
+      authorId: question.author_id,
+      upvotes,
+      hasVoted: !existingVote,
+    })
 
     res.json({
       success: true,
-      upvotes: updated?.upvotes || 0,
+      upvotes,
       hasVoted: !existingVote,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getQuestionCounts(req, res, next) {
+  try {
+    const filter = await buildQuestionBaseFilter(req)
+
+    if (!isAdmin(req)) {
+      filter.status = { $ne: 'removed' }
+    }
+
+    // Each tab layers its own status / recency constraint over the shared base.
+    // Status routes through getQuestionStatusFilter so these counts stay in lock
+    // step with the list endpoint's filtering ('resolved' → 'closed', etc.).
+    const [allCount, trendingCount, recentCount, unansweredCount, resolvedCount] = await Promise.all([
+      // All Queries
+      Question.countDocuments({ ...filter }),
+      // Trending (upvotes > 0)
+      Question.countDocuments({ ...filter, upvotes: { $gt: 0 } }),
+      // Recent (created in last 24h)
+      Question.countDocuments({
+        ...filter,
+        created_at: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      }),
+      // Unanswered
+      Question.countDocuments({ ...filter, status: getQuestionStatusFilter('unanswered') }),
+      // Resolved
+      Question.countDocuments({ ...filter, status: getQuestionStatusFilter('resolved') }),
+    ])
+
+    res.json({
+      success: true,
+      counts: {
+        'All Queries': allCount,
+        'Trending': trendingCount,
+        'Recent': recentCount,
+        'Unanswered': unansweredCount,
+        'Resolved': resolvedCount,
+      },
     })
   } catch (error) {
     next(error)

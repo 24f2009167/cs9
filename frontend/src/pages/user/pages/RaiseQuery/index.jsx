@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Field, Label, Textarea, Switch } from '@headlessui/react'
-import { CheckCircle2, Lightbulb, EyeOff, Image as ImageIcon, ExternalLink, Sparkles, Send } from 'lucide-react'
+import { CheckCircle2, Lightbulb, EyeOff, Image as ImageIcon, ExternalLink, Sparkles, Send, Bold, Italic, Link, Code, List } from 'lucide-react'
 import Input from '../../../../components/Input/Input'
 import Select from '../../../../components/Select/Select'
 import { createQuestion, fetchQuestionTags } from '../../service'
 import { queryClient } from '../../../../lib/queryClient'
 import { notifyError } from '../../../../lib/notify'
+import { parseMarkdown } from '../../../../lib/markdown'
 
 const STATUS_BADGE = {
   Resolved:      'bg-success/10 text-success',
@@ -14,8 +15,31 @@ const STATUS_BADGE = {
   Active:        'bg-brand/10 text-brand',
 }
 
+const FALLBACK_CATEGORIES = [{ value: 'others', label: 'Others' }]
+
 function stripHtml(s = '') {
   return s.replace(/<[^>]*>/g, '').trim()
+}
+
+function categoryOptionsFromTags(tags = []) {
+  const options = (tags || []).map(t => ({
+    value: t.tag,
+    label: t.tag.charAt(0).toUpperCase() + t.tag.slice(1),
+  }))
+  const hasOthers = options.some(option => option.value.toLowerCase() === 'others')
+
+  return hasOthers ? options : [...options, ...FALLBACK_CATEGORIES]
+}
+
+function submitErrorMessage(err) {
+  if (err.response?.status === 401) {
+    return 'Your session has expired. Please log in again.'
+  }
+  if (!err.response) {
+    return 'Could not reach the server. Please check that the backend is running.'
+  }
+
+  return err.response?.data?.message || 'Could not submit your query.'
 }
 
 function RaiseQueryPage() {
@@ -26,12 +50,69 @@ function RaiseQueryPage() {
   const [title, setTitle]           = useState('')
   const [description, setDescription] = useState('')
   const [anonymous, setAnonymous]   = useState(false)
+  const [attachments, setAttachments] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted]   = useState(false)
+  const [activeTab, setActiveTab]   = useState('write')
+  const fileInputRef = useRef(null)
+
+  function insertFormat(prefix, suffix = '') {
+    const textarea = document.getElementById('query-description-textarea')
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = textarea.value
+
+    const selectedText = text.substring(start, end)
+    const replacement = prefix + (selectedText || '') + suffix
+
+    setDescription(text.substring(0, start) + replacement + text.substring(end))
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(
+        start + prefix.length,
+        start + prefix.length + (selectedText || '').length
+      )
+    }, 0)
+  }
 
   // Similar queries come from the cached dashboard questions (empty until the
   // dashboard has been visited; cleared + refetched when Dashboard is reopened).
   const cachedQuestions = queryClient.getQueryData(['dashboardQuestions']) || []
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  function handleFileChange(files) {
+    const maxSize = 5 * 1024 * 1024
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg']
+    const nextFiles = []
+
+    for (const file of Array.from(files)) {
+      if (!allowedTypes.includes(file.type)) {
+        notifyError('Only PDF, JPG and PNG files are allowed.')
+        continue
+      }
+      if (file.size > maxSize) {
+        notifyError(`File ${file.name} must be 5MB or smaller.`)
+        continue
+      }
+      nextFiles.push(file)
+    }
+
+    if (nextFiles.length) {
+      setAttachments((current) => [...current, ...nextFiles].slice(0, 5))
+    }
+  }
+
+  function removeAttachment(index) {
+    setAttachments((current) => current.filter((_, idx) => idx !== index))
+  }
   const pool = category
     ? cachedQuestions.filter(q => q.tags?.some(t => t.label.toLowerCase() === category.toLowerCase()))
     : cachedQuestions
@@ -40,31 +121,30 @@ function RaiseQueryPage() {
   // Category options come from the DB tags so the query lands in the right bucket
   useEffect(() => {
     fetchQuestionTags()
-      .then(tags =>
-        setCategories([
-          ...(tags || []).map(t => ({
-            value: t.tag,
-            label: t.tag.charAt(0).toUpperCase() + t.tag.slice(1),
-          })),
-          { value: 'others', label: 'Others' },
-        ]),
-      )
-      .catch(() => setCategories([]))
+      .then(tags => setCategories(categoryOptionsFromTags(tags)))
+      .catch(() => setCategories(FALLBACK_CATEGORIES))
   }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (submitting) return
     if (!category)                return notifyError('Please choose a category.')
     if (title.trim().length < 10) return notifyError('Title must be at least 10 characters.')
     if (!description.trim())      return notifyError('Please add a description.')
 
     setSubmitting(true)
     try {
-      await createQuestion({ title: title.trim(), body: description.trim(), tags: [category], isAnonymous: anonymous })
+      await createQuestion({
+        title: title.trim(),
+        body: description.trim(),
+        tags: [category],
+        isAnonymous: anonymous,
+        attachments,
+      })
       setSubmitted(true)
       setTimeout(() => navigate('/dashboard'), 2500)
     } catch (err) {
-      notifyError(err.response?.data?.message || 'Could not submit your query.')
+      notifyError(submitErrorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -114,28 +194,144 @@ function RaiseQueryPage() {
           </Field>
 
           <Field className="flex flex-col">
-            <Label className="mb-2 text-[13px] font-semibold text-text-secondary">Detailed Description</Label>
-            <Textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={5}
-              placeholder="Provide as much detail as possible to help us resolve this quickly…"
-              className="w-full resize-y rounded-lg border border-border bg-bg-card px-4 py-3 text-[13px] text-text-primary shadow-sm outline-none transition placeholder:text-text-muted focus:border-text-primary focus:ring-1 focus:ring-text-primary"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-[13px] font-semibold text-text-secondary">Detailed Description</Label>
+              <div className="flex border border-border-light rounded-lg overflow-hidden p-0.5 bg-bg-primary">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('write')}
+                  className={`px-3 py-1 text-[11px] font-bold rounded transition ${
+                    activeTab === 'write'
+                      ? 'bg-bg-card text-brand shadow-sm'
+                      : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  Write
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('preview')}
+                  className={`px-3 py-1 text-[11px] font-bold rounded transition ${
+                    activeTab === 'preview'
+                      ? 'bg-bg-card text-brand shadow-sm'
+                      : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+
+            {activeTab === 'write' ? (
+              <div className="relative rounded-lg border border-border bg-bg-card shadow-sm focus-within:border-text-primary focus-within:ring-1 focus-within:ring-text-primary overflow-hidden">
+                {/* Formatting Toolbar */}
+                <div className="flex items-center gap-1 border-b border-border-light bg-bg-primary px-3 py-1.5">
+                  <button
+                    type="button"
+                    title="Bold"
+                    onClick={() => insertFormat('**', '**')}
+                    className="p-1 text-text-secondary hover:text-brand hover:bg-bg-tertiary rounded transition"
+                  >
+                    <Bold className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Italic"
+                    onClick={() => insertFormat('*', '*')}
+                    className="p-1 text-text-secondary hover:text-brand hover:bg-bg-tertiary rounded transition"
+                  >
+                    <Italic className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Insert Link"
+                    onClick={() => insertFormat('[', '](url)')}
+                    className="p-1 text-text-secondary hover:text-brand hover:bg-bg-tertiary rounded transition"
+                  >
+                    <Link className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Code Block"
+                    onClick={() => insertFormat('```\n', '\n```')}
+                    className="p-1 text-text-secondary hover:text-brand hover:bg-bg-tertiary rounded transition"
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Bullet List"
+                    onClick={() => insertFormat('- ', '')}
+                    className="p-1 text-text-secondary hover:text-brand hover:bg-bg-tertiary rounded transition"
+                  >
+                    <List className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <Textarea
+                  id="query-description-textarea"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={6}
+                  placeholder="Provide as much detail as possible to help us resolve this quickly. Markdown is supported (e.g. bold, bullet lists, code blocks)..."
+                  className="w-full resize-y bg-transparent px-4 py-3 text-[13px] text-text-primary outline-none transition placeholder:text-text-muted"
+                />
+              </div>
+            ) : (
+              <div 
+                className="markdown-body min-h-[178px] w-full rounded-lg border border-border bg-bg-primary px-4 py-3 text-[13px] text-text-secondary overflow-y-auto"
+                dangerouslySetInnerHTML={{ __html: parseMarkdown(description) || '<em class="text-text-muted">Nothing to preview</em>' }}
+              />
+            )}
           </Field>
 
-          {/* Attachments (not supported yet) */}
           <Field className="flex flex-col">
             <Label className="mb-2 text-[13px] font-semibold text-text-secondary">Attachments (Optional)</Label>
-            <button
-              type="button"
-              onClick={() => notifyError('Attachments are not supported yet.')}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-bg-card px-4 py-10 text-center transition hover:border-brand hover:bg-brand/5"
-            >
-              <ImageIcon className="h-7 w-7 text-text-muted" strokeWidth={1.6} />
-              <span className="text-[13px] font-bold text-text-primary">Click or drag and drop files here</span>
-              <span className="text-[12px] text-text-muted">PDF, JPG, PNG (Max 5MB)</span>
-            </button>
+            <div className="rounded-xl border-2 border-dashed border-border bg-bg-card p-4">
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl px-4 py-10 text-center transition hover:border-brand hover:bg-brand/5">
+                <ImageIcon className="h-7 w-7 text-text-muted" strokeWidth={1.6} />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-[13px] font-bold text-text-primary underline-offset-4 hover:text-brand"
+                >
+                  Choose files
+                </button>
+                <span className="text-[12px] text-text-muted">PDF, JPG, PNG (Max 5MB each)</span>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="application/pdf,image/png,image/jpeg"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files) {
+                    handleFileChange(e.target.files)
+                    e.target.value = ''
+                  }
+                }}
+              />
+              {attachments.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {attachments.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded-xl bg-bg-primary px-4 py-3 text-sm text-text-secondary">
+                      <div>
+                        <p className="font-medium text-text-primary">{file.name}</p>
+                        <p className="text-[11px] text-text-muted">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="text-[11px] font-semibold text-brand transition hover:text-brand/80"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
 
           {/* Raise anonymously */}

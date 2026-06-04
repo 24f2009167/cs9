@@ -2,16 +2,21 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, useOutletContext, useLocation } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, Check, CheckCircle, RotateCcw, ChevronUp, ChevronDown,
-  AlertTriangle, MessageCircle, Loader,
+  AlertTriangle, MessageCircle, Loader, Pencil, Trash2,
 } from 'lucide-react'
 import ReportModal from '../../components/ReportModal/ReportModal'
 import AnswerComments from '../../components/AnswerComments/AnswerComments'
 import Button from '../../../../components/Button/Button'
+import Modal from '../../../../components/Modal/Modal'
 import {
   fetchQuestionDetail, fetchQuestions, postAnswer, voteAnswer, reportContent, postComment,
-  resolveQuestion, acceptAnswer,
+  resolveQuestion, acceptAnswer, recordQuestionView, updateComment, deleteComment,
+  updateAnswer, deleteAnswer,
 } from '../../service'
 import { notifySuccess, notifyError } from '../../../../lib/notify'
+import { parseMarkdown } from '../../../../lib/markdown'
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 const STATUS_LABEL = {
   unanswered: 'Active',
@@ -24,7 +29,61 @@ function initialsOf(name = '') {
 }
 
 function fmtDate(d) {
-  return d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''
+  if (!d) return ''
+  const date = new Date(d)
+  if (Number.isNaN(date.getTime())) return ''
+
+  // Format the time part in 24-hour IST format (HH:MM)
+  const timePart = date.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+
+  // Get date parts in Asia/Kolkata timezone to compare days correctly
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  })
+  const parts = formatter.formatToParts(date)
+  const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]))
+  
+  const targetYear = parseInt(partMap.year, 10)
+  const targetMonth = parseInt(partMap.month, 10) - 1 // 0-indexed
+  const targetDay = parseInt(partMap.day, 10)
+
+  // Get current date parts in Asia/Kolkata timezone
+  const now = new Date()
+  const nowParts = formatter.formatToParts(now)
+  const nowPartMap = Object.fromEntries(nowParts.map(p => [p.type, p.value]))
+  const nowYear = parseInt(nowPartMap.year, 10)
+  const nowMonth = parseInt(nowPartMap.month, 10) - 1
+  const nowDay = parseInt(nowPartMap.day, 10)
+
+  // Create clean Date objects representing just the calendar days in IST
+  const targetDateIST = new Date(targetYear, targetMonth, targetDay)
+  const nowDateIST = new Date(nowYear, nowMonth, nowDay)
+
+  const diffTime = nowDateIST.getTime() - targetDateIST.getTime()
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
+
+  // Format month and day
+  const dateOptions = { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' }
+  if (targetYear !== nowYear) {
+    dateOptions.year = 'numeric'
+  }
+  const datePart = date.toLocaleDateString('en-IN', dateOptions)
+
+  if (diffDays === 0) {
+    return `Today at ${timePart}`
+  } else if (diffDays === 1) {
+    return `Yesterday at ${timePart}`
+  } else {
+    return `${datePart} at ${timePart}`
+  }
 }
 
 function QueryDetailPage() {
@@ -38,14 +97,18 @@ function QueryDetailPage() {
   const [loading, setLoading] = useState(true)
   const [reply, setReply] = useState('')
   const [posting, setPosting] = useState(false)
+  const [resolving, setResolving] = useState(false)
   const [reportTarget, setReportTarget] = useState(null) // { type, id }
   const [reporting, setReporting] = useState(false)
   const [related, setRelated] = useState([])     // latest queries sharing tags
+  const [replyTab, setReplyTab] = useState('write') // 'write' | 'preview'
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setData(await fetchQuestionDetail(queryId))
+      const result = await fetchQuestionDetail(queryId)
+      setData(result)
+      recordQuestionView(queryId)
     } catch {
       setData(null)
     } finally {
@@ -97,13 +160,56 @@ function QueryDetailPage() {
     }
   }
 
+  async function handleEditComment(commentId, body) {
+    try {
+      await updateComment(commentId, body)
+      await refresh()
+      notifySuccess('Comment updated.')
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not update comment.')
+    }
+  }
+
+  async function handleDeleteComment(commentId) {
+    try {
+      await deleteComment(commentId)
+      await refresh()
+      notifySuccess('Comment deleted.')
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not delete comment.')
+    }
+  }
+
+  async function handleEditAnswer(answerId, body) {
+    try {
+      await updateAnswer(answerId, body)
+      await refresh()
+      notifySuccess('Answer updated.')
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not update answer.')
+    }
+  }
+
+  async function handleDeleteAnswer(answerId) {
+    try {
+      await deleteAnswer(answerId)
+      await refresh()
+      notifySuccess('Answer deleted.')
+    } catch (err) {
+      notifyError(err.response?.data?.message || 'Could not delete answer.')
+    }
+  }
+
   async function handleResolveToggle(resolved) {
+    setResolving(true)
     try {
       await resolveQuestion(queryId, resolved)
-      notifySuccess(resolved ? 'Question marked as solved.' : 'Question reopened.')
+      notifySuccess(resolved ? 'Question marked as resolved.' : 'Question reopened.')
       await refresh()
     } catch (err) {
       notifyError(err.response?.data?.message || 'Could not update the question.')
+    } finally {
+      setResolving(false)
     }
   }
 
@@ -218,18 +324,36 @@ function QueryDetailPage() {
                 isResolved ? (
                   <Button
                     variant="secondary"
-                    className="shrink-0 gap-2 text-[12px]"
+                    className={`shrink-0 gap-2 text-[12px] transition ${resolving ? 'cursor-not-allowed opacity-80' : ''}`}
                     onClick={() => handleResolveToggle(false)}
+                    disabled={resolving}
                   >
-                    <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.8} /> Reopen
+                    {resolving ? (
+                      <>
+                        <Loader className="h-3.5 w-3.5 animate-spin" /> Reopening...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.8} /> Reopen
+                      </>
+                    )}
                   </Button>
                 ) : (
                   <Button
                     variant="secondary"
-                    className="shrink-0 gap-2 border-brand text-[12px] text-brand hover:border-brand hover:text-brand"
+                    className={`shrink-0 gap-2 border-brand text-[12px] text-brand hover:border-brand hover:text-brand transition ${resolving ? 'cursor-not-allowed opacity-80' : ''}`}
                     onClick={() => handleResolveToggle(true)}
+                    disabled={resolving}
                   >
-                    <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Mark as Solved
+                    {resolving ? (
+                      <>
+                        <Loader className="h-3.5 w-3.5 animate-spin" /> Resolving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5" strokeWidth={1.8} /> Mark as Resolved
+                      </>
+                    )}
                   </Button>
                 )
               )}
@@ -257,6 +381,9 @@ function QueryDetailPage() {
               date={fmtDate(question.created_at)}
               body={question.body}
               isOriginal
+              moderationState="visible"
+              attachments={question.attachments}
+              onReport={() => setReportTarget({ type: 'question', id: question.question_id })}
             />
 
             {/* Answers */}
@@ -281,7 +408,12 @@ function QueryDetailPage() {
                   onAccept={() => handleAcceptAnswer(ans.answer_id)}
                   onVoteUp={() => handleVote(ans.answer_id, 'up')}
                   onVoteDown={() => handleVote(ans.answer_id, 'down')}
+                  authorRole={ans.author_role}
+                  attachments={ans.attachments}
                   onReport={() => setReportTarget({ type: 'answer', id: ans.answer_id })}
+                  onEdit={body => handleEditAnswer(ans.answer_id, body)}
+                  onDelete={() => handleDeleteAnswer(ans.answer_id)}
+                  createdAt={ans.created_at}
                 >
                   {!hidden && (
                     <AnswerComments
@@ -290,6 +422,8 @@ function QueryDetailPage() {
                       currentUserId={user?.userId}
                       locked={isResolved}
                       onSubmit={handleComment}
+                      onEdit={handleEditComment}
+                      onDelete={handleDeleteComment}
                     />
                   )}
                 </ThreadItem>
@@ -309,12 +443,39 @@ function QueryDetailPage() {
                   {initialsOf(user?.name)}
                 </div>
                 <div className="rounded-xl border border-border-light bg-bg-card p-4 shadow-sm">
-                  <textarea
-                    value={reply}
-                    onChange={e => setReply(e.target.value)}
-                    placeholder="Drop your resolution, comment, or suggestions here…"
-                    className="min-h-[80px] w-full resize-y text-[13px] leading-6 text-text-primary outline-none placeholder:text-text-muted"
-                  />
+                  <div className="mb-2 flex items-center justify-between border-b border-border-light pb-2">
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setReplyTab('write')}
+                        className={`text-[11px] font-bold pb-0.5 transition ${replyTab === 'write' ? 'border-b-2 border-brand text-brand' : 'text-text-muted hover:text-text-primary'}`}
+                      >
+                        Write
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReplyTab('preview')}
+                        className={`text-[11px] font-bold pb-0.5 transition ${replyTab === 'preview' ? 'border-b-2 border-brand text-brand' : 'text-text-muted hover:text-text-primary'}`}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {replyTab === 'write' ? (
+                    <textarea
+                      value={reply}
+                      onChange={e => setReply(e.target.value)}
+                      placeholder="Drop your resolution, comment, or suggestions here. Markdown is supported…"
+                      className="min-h-[80px] w-full resize-y text-[13px] leading-6 text-text-primary outline-none placeholder:text-text-muted"
+                    />
+                  ) : (
+                    <div
+                      className="markdown-body min-h-[80px] w-full text-[13px] text-text-secondary overflow-y-auto"
+                      dangerouslySetInnerHTML={{ __html: parseMarkdown(reply) || '<em class="text-text-muted">Nothing to preview</em>' }}
+                    />
+                  )}
+
                   <div className="mt-2 flex justify-end border-t border-border-light pt-4">
                     <button
                       type="button"
@@ -403,6 +564,7 @@ function QueryDetailPage() {
       <ReportModal
         open={!!reportTarget}
         submitting={reporting}
+        targetType={reportTarget?.type}
         onClose={() => setReportTarget(null)}
         onSubmit={handleReportSubmit}
       />
@@ -412,14 +574,33 @@ function QueryDetailPage() {
 
 // ── Thread item (OP or answer) ──────────────────────────────────────────────
 function ThreadItem({
-  authorName, isSelf, date, body, isOriginal, accepted, score, myVote = 0,
-  moderationState = 'visible', canAccept = false, onAccept, onVoteUp, onVoteDown, onReport, children,
+  authorName, isSelf, authorRole, date, body, isOriginal, accepted, score, myVote = 0,
+  moderationState = 'visible', canAccept = false, onAccept, onVoteUp, onVoteDown, onReport,
+  onEdit, onDelete, createdAt, attachments = [], children,
 }) {
   const initials = initialsOf(authorName)
   const hidden = moderationState !== 'visible'
   const tombstone = moderationState === 'deleted'
     ? `This reply from ${authorName} was deleted.`
     : `This reply from ${authorName} is under review.`
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(body || '')
+  const [editBusy, setEditBusy] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  // Captured once on mount; the 15-min edit window is generous and the backend
+  // enforces the real limit, so we avoid calling Date.now() during render.
+  const [mountedAt] = useState(() => Date.now())
+
+  const isEditable = () => {
+    if (!isSelf) return false
+    if (hidden) return false
+    if (!createdAt) return false
+    const createdTime = new Date(createdAt).getTime()
+    const diffMs = mountedAt - createdTime
+    return diffMs <= 15 * 60 * 1000
+  }
 
   return (
     <div className="relative mb-8">
@@ -454,38 +635,120 @@ function ThreadItem({
         {/* Body — tombstone when hidden */}
         {hidden ? (
           <p className="px-5 py-5 text-[13px] italic leading-6 text-text-muted">{tombstone}</p>
+        ) : isEditing ? (
+          <div className="px-5 py-5">
+            <textarea
+              autoFocus
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              className="min-h-[100px] w-full resize-y rounded-lg border border-border-light p-3 text-[14px] leading-6 text-text-primary outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+            />
+            <div className="mt-3 flex gap-2">
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  if (!editText.trim()) return
+                  setEditBusy(true)
+                  try {
+                    if (onEdit) {
+                      await onEdit(editText.trim())
+                    }
+                    setIsEditing(false)
+                  } finally {
+                    setEditBusy(false)
+                  }
+                }}
+                disabled={editBusy}
+                className="min-h-9 px-4 text-xs font-semibold cursor-pointer"
+              >
+                {editBusy ? 'Saving…' : 'Save'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setIsEditing(false)}
+                className="min-h-9 px-4 text-xs font-medium cursor-pointer"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
         ) : (
-          <div
-            className="px-5 py-5 text-[14px] leading-6 text-text-secondary"
-            dangerouslySetInnerHTML={{ __html: body }}
-          />
+          <div className="px-5 py-5">
+            <div
+              className="markdown-body text-[14px] leading-6 text-text-secondary"
+              dangerouslySetInnerHTML={{ __html: parseMarkdown(body) }}
+            />
+            {attachments.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-border-light bg-bg-primary p-4">
+                <h4 className="mb-3 text-[13px] font-semibold text-text-primary">Attachments</h4>
+                <ul className="space-y-2">
+                  {attachments.map((attachment) => {
+                    const downloadUrl = attachment.download_url?.startsWith('/api') && API_BASE_URL
+                      ? `${API_BASE_URL}${attachment.download_url}`
+                      : attachment.download_url
+
+                    const previewUrl = `${downloadUrl}?preview=true`
+
+                    return (
+                      <li key={attachment.attachment_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border-light bg-bg-card px-4 py-3">
+                        <span className="text-[13px] font-medium text-text-primary truncate max-w-[280px] sm:max-w-[400px]" title={attachment.file_name}>
+                          {attachment.file_name}
+                        </span>
+                        <div className="flex gap-2">
+                          <a
+                            href={previewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center rounded-lg bg-brand/10 px-3 py-1.5 text-[11px] font-bold text-brand transition-colors hover:bg-brand/20"
+                          >
+                            Preview
+                          </a>
+                          <a
+                            href={downloadUrl}
+                            download={attachment.file_name}
+                            className="inline-flex items-center justify-center rounded-lg border border-border-light px-3 py-1.5 text-[11px] font-bold text-text-secondary transition-colors hover:bg-bg-tertiary"
+                          >
+                            Download
+                          </a>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Footer (visible answers only) */}
-        {!isOriginal && !hidden && (
+        {/* Footer (visible answers and original question) */}
+        {!hidden && (
           <div className="flex items-center justify-between border-t border-border-light bg-bg-tertiary px-5 py-3">
-            <div className="flex items-center gap-2 text-[14px] font-bold text-text-primary">
-              <button
-                type="button"
-                onClick={onVoteUp}
-                title={myVote === 1 ? 'Remove upvote' : 'Upvote'}
-                className={`transition ${myVote === 1 ? 'text-brand' : 'text-text-muted hover:text-brand'}`}
-              >
-                <ChevronUp className="h-5 w-5" strokeWidth={myVote === 1 ? 3 : 2} />
-              </button>
-              <span className={myVote === 1 ? 'text-brand' : myVote === -1 ? 'text-danger' : ''}>{score}</span>
-              <button
-                type="button"
-                onClick={onVoteDown}
-                title={myVote === -1 ? 'Remove downvote' : 'Downvote'}
-                className={`transition ${myVote === -1 ? 'text-danger' : 'text-text-muted hover:text-danger'}`}
-              >
-                <ChevronDown className="h-5 w-5" strokeWidth={myVote === -1 ? 3 : 2} />
-              </button>
-            </div>
+            {!isOriginal ? (
+              <div className="flex items-center gap-2 text-[14px] font-bold text-text-primary">
+                <button
+                  type="button"
+                  onClick={onVoteUp}
+                  title={myVote === 1 ? 'Remove upvote' : 'Upvote'}
+                  className={`transition ${myVote === 1 ? 'text-brand' : 'text-text-muted hover:text-brand'}`}
+                >
+                  <ChevronUp className="h-5 w-5" strokeWidth={myVote === 1 ? 3 : 2} />
+                </button>
+                <span className={myVote === 1 ? 'text-brand' : myVote === -1 ? 'text-danger' : ''}>{score}</span>
+                <button
+                  type="button"
+                  onClick={onVoteDown}
+                  title={myVote === -1 ? 'Remove downvote' : 'Downvote'}
+                  className={`transition ${myVote === -1 ? 'text-danger' : 'text-text-muted hover:text-danger'}`}
+                >
+                  <ChevronDown className="h-5 w-5" strokeWidth={myVote === -1 ? 3 : 2} />
+                </button>
+              </div>
+            ) : (
+              <div />
+            )}
             <div className="flex items-center gap-4">
               {/* Owner: accept this answer as the resolution */}
-              {canAccept && (
+              {!isOriginal && canAccept && (
                 <button
                   type="button"
                   onClick={onAccept}
@@ -495,7 +758,39 @@ function ThreadItem({
                 </button>
               )}
               {isSelf ? (
-                <span className="text-[11px] italic text-text-muted">Cannot report own comment</span>
+                isOriginal ? (
+                  // Edit/delete of the original question is out of scope here;
+                  // keep the report-own-question affordance from the report feature.
+                  <span className="text-[11px] italic text-text-muted">
+                    Cannot report own question
+                  </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {isEditable() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditing(true)
+                          setEditText(body)
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-brand hover:text-brand hover:bg-brand/5 shadow-xs cursor-pointer"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-brand" strokeWidth={1.8} />
+                        <span className="leading-none">Edit</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center gap-1.5 rounded-lg border border-border-light bg-bg-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition-all duration-200 hover:border-danger hover:text-danger hover:bg-danger/5 shadow-xs cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-text-muted transition-colors hover:text-danger" strokeWidth={1.8} />
+                      <span className="leading-none">Delete</span>
+                    </button>
+                  </div>
+                )
+              ) : authorRole === 'ADMIN' ? (
+                <span className="text-[11px] italic text-text-muted">Cannot report admin</span>
               ) : (
                 <button
                   type="button"
@@ -512,6 +807,49 @@ function ThreadItem({
         {/* Comments / replies under this answer */}
         {!isOriginal && children}
       </div>
+
+      {/* Premium Deletion Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Answer"
+      >
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 mb-4 dark:bg-red-950/30 dark:text-red-400">
+            <AlertTriangle className="h-6 w-6" strokeWidth={1.8} />
+          </div>
+          <h3 className="text-[16px] font-bold text-text-primary mb-2">Delete Answer</h3>
+          <p className="text-[13px] text-text-muted mb-6 leading-5">
+            Are you sure you want to delete this answer? This action cannot be undone.
+          </p>
+          <div className="flex w-full gap-3 justify-center">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1 py-2 text-xs font-semibold cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                setDeleteBusy(true)
+                try {
+                  if (onDelete) {
+                    await onDelete()
+                  }
+                  setShowDeleteConfirm(false)
+                } finally {
+                  setDeleteBusy(false)
+                }
+              }}
+              disabled={deleteBusy}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 text-xs font-semibold focus:ring-red-500 cursor-pointer disabled:opacity-60"
+            >
+              {deleteBusy ? 'Deleting…' : 'Delete'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

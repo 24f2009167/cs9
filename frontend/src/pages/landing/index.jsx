@@ -68,8 +68,16 @@ function Tooltip({ label, children }) {
 function Landing() {
   const [explicitOpenKeys, setExplicitOpenKeys] = useState(new Set())
   const [closedKeys, setClosedKeys] = useState(new Set())
-  const [query, setQuery] = useState('')
+  const [inputValue, setInputValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [activeSectionId, setActiveSectionId] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(inputValue)
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [inputValue])
   const [pageProgress, setPageProgress] = useState(0)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
   const navigate = useNavigate()
@@ -135,14 +143,11 @@ function Landing() {
   const { data: faqSections = emptySections, isLoading, isError, error } = useQuery({
     queryKey: ['landing-faqs'],
     queryFn: () => getFaqSections(),
-    staleTime: Infinity,
+    staleTime: 5 * 1000,
   })
 
   const sections = isError ? emptySections : faqSections
-  const firstSection = sections[0]
-  const firstFaq = firstSection?.faqs[0]
-  const firstFaqKey = firstSection && firstFaq ? `${firstSection.id}:${firstFaq.id}` : ''
-  const openKeys = new Set(firstFaqKey ? [firstFaqKey] : [])
+  const openKeys = new Set()
   closedKeys.forEach((key) => openKeys.delete(key))
   explicitOpenKeys.forEach((key) => openKeys.add(key))
 
@@ -190,7 +195,7 @@ function Landing() {
   }, [sections])
 
   const visibleSections = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = searchQuery.trim().toLowerCase()
 
     if (!normalizedQuery) {
       return sections
@@ -212,7 +217,7 @@ function Landing() {
         }
       })
       .filter((section) => section.faqs.length > 0)
-  }, [query, sections])
+  }, [searchQuery, sections])
 
   const hasSections = sections.length > 0
   const currentActiveSectionId = activeSectionId || sections[0]?.id || ''
@@ -227,11 +232,11 @@ function Landing() {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex flex-col text-left transition hover:opacity-80"
           >
-            <span className="font-display text-[18px] font-bold leading-tight text-text-primary sm:text-[22px]">
-              {__PROJECT_NAME__}
+            <span className="font-display text-[18px] font-bold leading-tight text-text-primary">
+              {__PROJECT_NAME__ || 'Vicharanashala'}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">
-              {__PROJECT_TAGLINE__}
+              {__PROJECT_TAGLINE__ || 'Lab Internship Hub'}
             </span>
           </button>
           <Button variant="secondary" className="text-[10px] bg-brand/80 text-white" onClick={handleHeaderButtonClick}>
@@ -241,7 +246,7 @@ function Landing() {
       </header>
 
       <div id="top" className="mx-auto flex w-full max-w-300">
-        <aside className="sticky top-16 hidden w-62 shrink-0 flex-col self-start border-r border-border pr-3 py-6 md:flex">
+        <aside className="sticky top-16 hidden w-62 shrink-0 flex-col self-start border-r border-border pr-3 py-6 md:flex max-h-[calc(100vh-6rem)] overflow-y-auto">
           <div className="mb-4">
             <h2 className="font-display text-[14px] font-semibold leading-snug text-text-primary">
               FAQ Tags
@@ -263,6 +268,10 @@ function Landing() {
                 <a
                   href={`#${section.id}`}
                   key={section.id}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className={`flex min-h-10 items-center gap-3 px-2 py-2 text-[14px] leading-normal transition ${
                     isActive ? 'border-r-2 border-brand font-bold text-brand bg-brand/10' : 'text-text-secondary hover:bg-brand/10 hover:text-brand'
                   }`}
@@ -274,6 +283,7 @@ function Landing() {
             })}
           </nav>
         </aside>
+
 
         <main className="min-w-0 flex-1 pl-2 pr-4 py-6">
           <div className="mb-8 md:hidden">
@@ -302,6 +312,10 @@ function Landing() {
                   <a
                     href={`#${section.id}`}
                     key={section.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                     className={`flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-[13px] ${
                       isActive
                         ? 'border-text-primary bg-black text-white'
@@ -313,6 +327,7 @@ function Landing() {
                   </a>
                 )
               })}
+
             </nav>
           </div>
 
@@ -327,8 +342,9 @@ function Landing() {
               className="h-10 w-full rounded-lg border border-border bg-bg-card pl-9 pr-4 text-[12px] outline-none transition placeholder:text-text-muted focus:border-text-primary focus:ring-1 focus:ring-text-primary"
               placeholder="Search for questions (e.g., 'stipend', 'selection')..."
               type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
             />
           </label>
 
@@ -405,6 +421,7 @@ function Landing() {
                           sectionId={section.id}
                           isOpen={isOpen}
                           onToggle={() => toggleFaq(accordionKey)}
+                          searchQuery={searchQuery}
                         />
                       )
                     })}

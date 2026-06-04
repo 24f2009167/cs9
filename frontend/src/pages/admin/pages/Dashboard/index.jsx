@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react'
+import { axisPrivate } from '../../../../api/axios'
 import {
   AlertCircle,
   CheckCircle,
@@ -9,6 +11,7 @@ import {
   SlidersHorizontal,
   TrendingDown,
   TrendingUp,
+  HelpCircle,
 } from 'lucide-react'
 import {
   Bar,
@@ -39,7 +42,7 @@ function MetricCard({ title, value, Icon, iconClassName, trend, trendType = 'up'
           <Icon className="h-5 w-5" strokeWidth={1.8} />
         </div>
         {badge ? (
-          <span className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-bold text-white">
+          <span className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-bold text-white dark:bg-red-500/15 dark:text-red-300">
             {badge}
           </span>
         ) : (
@@ -74,6 +77,26 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
   const categoryData = dashboardData?.charts?.categories || []
   const attentionRows = recentFlags.slice(0, 5)
 
+  const [unresolvedQueries, setUnresolvedQueries] = useState([])
+  const [unresolvedCount, setUnresolvedCount] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    async function fetchUnresolved() {
+      try {
+        const { data } = await axisPrivate().get('/api/questions?status=unanswered&limit=5')
+        if (active && data) {
+          setUnresolvedQueries(data.questions || [])
+          setUnresolvedCount(data.pagination?.total || 0)
+        }
+      } catch (err) {
+        console.error('Failed to fetch unresolved queries', err)
+      }
+    }
+    fetchUnresolved()
+    return () => { active = false }
+  }, [])
+
   return (
     <div className="flex-1 overflow-y-auto p-5 lg:p-8">
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -102,12 +125,12 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
         </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="admin-kpis" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           title="Community Queries"
           value={formatNumber(questionMetrics.community)}
           Icon={ClipboardList}
-          iconClassName="bg-blue-50 text-blue-700"
+          iconClassName="bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200"
           trend={`${formatNumber(questionMetrics.total)} total`}
           onClick={() => onNavigate('queriesManagement')}
         />
@@ -115,7 +138,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
           title="FAQ Entries"
           value={formatNumber(questionMetrics.faq)}
           Icon={CheckCircle}
-          iconClassName="bg-amber-50 text-amber-700"
+          iconClassName="bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-200"
           trend="Published"
           onClick={() => onNavigate('faqManagement')}
         />
@@ -123,7 +146,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
           title="Answers"
           value={formatNumber(metrics.answers?.total)}
           Icon={Clock}
-          iconClassName="bg-violet-50 text-violet-700"
+          iconClassName="bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-200"
           trendType="down"
           trend="Live"
         />
@@ -131,13 +154,73 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
           title="Open Flags"
           value={formatNumber(flagsMetrics.open)}
           Icon={AlertCircle}
-          iconClassName="bg-red-50 text-red-600"
+          iconClassName="bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-200"
           badge={flagsMetrics.open > 0 ? 'URGENT' : 'CLEAR'}
           onClick={onNavigate ? () => onNavigate('flagModeration') : undefined}
         />
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <section data-tour="admin-unresolved" className="mb-8 overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-border-light px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-[17px] font-bold text-text-primary">Unresolved Queries</h2>
+            <p className="mt-1 text-[12px] text-text-muted">
+              Showing {unresolvedQueries.length} of {formatNumber(unresolvedCount)} open queries
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate?.('queriesManagement', { state: { status: 'unanswered' } })}
+            className="flex items-center gap-2 text-[12px] font-semibold text-brand transition hover:text-brand-hover"
+          >
+            <HelpCircle className="h-4 w-4" strokeWidth={1.8} />
+            View all queries
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] border-collapse text-[13px]">
+            <thead>
+              <tr className="border-b border-border-light bg-bg-tertiary text-left text-[11px] font-bold uppercase tracking-wide text-text-muted">
+                <th className="px-5 py-3">ID</th>
+                <th className="px-5 py-3">Title</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Author</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unresolvedQueries.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-center text-text-muted" colSpan={4}>
+                    No unresolved queries.
+                  </td>
+                </tr>
+              ) : (
+                unresolvedQueries.map((q) => (
+                  <tr key={q.question_id} className="border-b border-border-light last:border-b-0">
+                    <td className="px-5 py-4 font-bold text-text-primary">
+                      #{q.question_id?.slice(0, 8)}
+                    </td>
+                    <td className="max-w-[320px] truncate px-5 py-4 text-text-secondary font-medium">
+                      {q.title}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="rounded bg-orange-50 px-2 py-1 text-[10px] font-bold uppercase text-orange-700">
+                        {q.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-text-secondary">
+                      {q.author_name || 'User'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div data-tour="admin-charts" className="mb-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
         <section className="rounded-lg border border-border-light bg-bg-card p-5 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-[17px] font-bold text-text-primary">Query Volume by Category</h2>
@@ -158,24 +241,24 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
                 barGap={4}
                 barCategoryGap="24%"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
                 <XAxis
                   dataKey="category"
-                  tick={{ fontSize: 9, fontWeight: 700, fill: '#6b7280' }}
+                  tick={{ fontSize: 9, fontWeight: 700, fill: 'var(--color-text-secondary)' }}
                   tickLine={false}
-                  axisLine={{ stroke: '#e5e7eb' }}
+                  axisLine={{ stroke: 'var(--color-border-light)' }}
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }}
                   tickLine={false}
                   axisLine={false}
                   width={36}
                   allowDecimals={false}
                 />
                 <Tooltip
-                  cursor={{ fill: '#f9fafb' }}
-                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
-                  labelStyle={{ fontWeight: 700, color: '#111827' }}
+                  cursor={{ fill: 'var(--color-bg-secondary)' }}
+                  contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border-light)', fontSize: 12 }}
+                  labelStyle={{ fontWeight: 700, color: 'var(--color-text-primary)' }}
                 />
                 <Bar dataKey="new" name="New" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={20} />
                 <Bar dataKey="resolved" name="Resolved" fill="#d1d5db" radius={[4, 4, 0, 0]} maxBarSize={20} />
@@ -198,26 +281,26 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
                 data={dashboardData?.last24h || []}
                 margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-light)" vertical={false} />
                 <XAxis
                   dataKey="hour"
-                  tick={{ fontSize: 9, fill: '#9ca3af' }}
+                  tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}
                   tickLine={false}
-                  axisLine={{ stroke: '#e5e7eb' }}
+                  axisLine={{ stroke: 'var(--color-border-light)' }}
                   tickFormatter={val => val.split(' ')[1]?.slice(0, 5) || val}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }}
                   tickLine={false}
                   axisLine={false}
                   width={28}
                   allowDecimals={false}
                 />
                 <Tooltip
-                  cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-                  contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
-                  labelStyle={{ fontWeight: 700, color: '#111827' }}
+                  cursor={{ stroke: 'var(--color-border-light)', strokeWidth: 1 }}
+                  contentStyle={{ borderRadius: 8, border: '1px solid var(--color-border-light)', fontSize: 12 }}
+                  labelStyle={{ fontWeight: 700, color: 'var(--color-text-primary)' }}
                   labelFormatter={val => val}
                 />
                 <Legend
@@ -260,7 +343,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
       </div>
 
 
-      <section className="overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
+      <section data-tour="admin-moderation" className="overflow-hidden rounded-lg border border-border-light bg-bg-card shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border-light px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-[17px] font-bold text-text-primary">Needs Attention</h2>
@@ -324,7 +407,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
         </div>
       </section>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-tour="admin-stats-summary" className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-border-light bg-bg-card p-4">
           <p className="text-[11px] font-bold uppercase tracking-wide text-text-muted">Users</p>
           <p className="mt-2 text-[22px] font-semibold text-text-primary">
@@ -348,6 +431,7 @@ function DashboardView({ dashboardData, isLoading, onRefresh, onNavigate }) {
           </p>
         </div>
         <button
+          data-tour="admin-settings-shortcut"
           type="button"
           onClick={() => onNavigate?.('settings')}
           className="rounded-lg border border-border-light bg-bg-card p-4 text-left transition hover:border-brand hover:shadow-md"

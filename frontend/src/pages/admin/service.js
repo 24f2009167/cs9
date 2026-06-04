@@ -121,9 +121,13 @@ export async function deleteTag(tagName) {
 
 // ─── Queries management ──────────────────────────────────────────────────────
 
-export async function fetchAdminQuestions({ page = 1, limit = 10, search = '' } = {}) {
+export async function fetchAdminQuestions({ page = 1, limit = 10, search = '', status = '', kind = '', id = '', hasExpertAnswer = '' } = {}) {
   const params = new URLSearchParams({ page, limit, sort: 'latest' })
   if (search.trim()) params.set('search', search.trim())
+  if (status) params.set('status', status)
+  if (kind) params.set('kind', kind)
+  if (id.trim()) params.set('id', id.trim())
+  if (hasExpertAnswer !== '') params.set('hasExpertAnswer', hasExpertAnswer)
   // Admins receive every question (all kinds/statuses) — see listQuestions.
   const { data } = await axisPrivate().get(`/api/questions?${params}`)
   return {
@@ -134,7 +138,7 @@ export async function fetchAdminQuestions({ page = 1, limit = 10, search = '' } 
 
 // ─── FAQ management ──────────────────────────────────────────────────────────
 
-export async function fetchFAQs({ limit = 100 } = {}) {
+export async function fetchFAQs({ limit = 1000 } = {}) {
   const { data } = await axisPrivate().get(`/api/questions?kind=faq&limit=${limit}`)
   // Admins receive removed entries too; hide soft-deleted FAQs from the panel.
   return (data.questions || []).filter((faq) => faq.status !== 'removed')
@@ -160,4 +164,9 @@ export async function createFAQ({ title, body, tags }) {
     tags,
   })
   return data.question
+}
+
+export async function exportToFAQ(questionId, payload) {
+  const { data } = await axisPrivate().post(`/api/admin/questions/${questionId}/export-faq`, payload)
+  return data
 }

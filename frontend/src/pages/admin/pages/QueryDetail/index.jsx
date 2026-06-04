@@ -4,9 +4,13 @@ import {
   User, Clock, Loader, ShieldCheck, VenetianMask, Eye, Award, Trash2, AlertTriangle, Send,
 } from 'lucide-react'
 import { fetchQuestionDetail } from '../../../user/service'
-import { adminResolveQuery } from '../../service'
+import { adminResolveQuery, exportToFAQ, fetchTags } from '../../service'
 import { notifyError, notifySuccess } from '../../../../lib/notify'
 import useAuthStore from '../../../../store/useAuthStore'
+import { parseMarkdown } from '../../../../lib/markdown'
+import Modal from '../../../../components/Modal/Modal'
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 const STATUS_STYLE = {
   unanswered: 'bg-amber-50 text-amber-700',
@@ -24,11 +28,60 @@ function initialsOf(name = '') {
 
 function formatDateTime(value) {
   if (!value) return '—'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('en-IN', {
-    day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+
+  // Format the time part in 24-hour IST format (HH:MM)
+  const timePart = date.toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
   })
+
+  // Get date parts in Asia/Kolkata timezone to compare days correctly
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  })
+  const parts = formatter.formatToParts(date)
+  const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]))
+  
+  const targetYear = parseInt(partMap.year, 10)
+  const targetMonth = parseInt(partMap.month, 10) - 1 // 0-indexed
+  const targetDay = parseInt(partMap.day, 10)
+
+  // Get current date parts in Asia/Kolkata timezone
+  const now = new Date()
+  const nowParts = formatter.formatToParts(now)
+  const nowPartMap = Object.fromEntries(nowParts.map(p => [p.type, p.value]))
+  const nowYear = parseInt(nowPartMap.year, 10)
+  const nowMonth = parseInt(nowPartMap.month, 10) - 1
+  const nowDay = parseInt(nowPartMap.day, 10)
+
+  // Create clean Date objects representing just the calendar days in IST
+  const targetDateIST = new Date(targetYear, targetMonth, targetDay)
+  const nowDateIST = new Date(nowYear, nowMonth, nowDay)
+
+  const diffTime = nowDateIST.getTime() - targetDateIST.getTime()
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
+
+  // Format month and day
+  const dateOptions = { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' }
+  if (targetYear !== nowYear) {
+    dateOptions.year = 'numeric'
+  }
+  const datePart = date.toLocaleDateString('en-IN', dateOptions)
+
+  if (diffDays === 0) {
+    return `Today at ${timePart}`
+  } else if (diffDays === 1) {
+    return `Yesterday at ${timePart}`
+  } else {
+    return `${datePart} at ${timePart}`
+  }
 }
 
 function Badge({ className, children }) {
@@ -83,8 +136,8 @@ function AnswerCard({ answer, comments }) {
 
           {/* Body */}
           <div
-            className="text-[13px] leading-6 text-text-secondary [&_a]:text-brand [&_a]:underline"
-            dangerouslySetInnerHTML={{ __html: answer.body || '<em>(empty)</em>' }}
+            className="markdown-body text-[13px] leading-6 text-text-secondary [&_a]:text-brand [&_a]:underline"
+            dangerouslySetInnerHTML={{ __html: parseMarkdown(answer.body) || '<em>(empty)</em>' }}
           />
 
           {/* References */}
@@ -110,7 +163,7 @@ function AnswerCard({ answer, comments }) {
                     <span className="ml-2 text-[10px] text-text-muted">{formatDateTime(c.created_at)}</span>
                     {cs === 'deleted' && <span className="ml-2 text-[10px] font-bold uppercase text-red-600">deleted</span>}
                     {cs === 'under_review' && <span className="ml-2 text-[10px] font-bold uppercase text-amber-600">under review</span>}
-                    <p className="mt-0.5 text-text-secondary" dangerouslySetInnerHTML={{ __html: c.body || '' }} />
+                    <p className="markdown-body mt-0.5 text-text-secondary" dangerouslySetInnerHTML={{ __html: parseMarkdown(c.body) || '' }} />
                   </div>
                 )
               })}
@@ -128,6 +181,82 @@ function AdminQueryDetailView({ queryId, onBack }) {
   const [error, setError]     = useState(false)
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [commentTab, setCommentTab] = useState('write') // 'write' | 'preview'
+
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportForm, setExportForm] = useState({ title: '', body: '', tags: '' })
+  const [exporting, setExporting] = useState(false)
+  const [availableTags, setAvailableTags] = useState([])
+  const [answerTab, setAnswerTab] = useState('write') // 'write' | 'preview'
+
+  useEffect(() => {
+    if (showExportModal) {
+      fetchTags()
+        .then((tags) => {
+          if (Array.isArray(tags)) {
+            setAvailableTags(tags)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [showExportModal])
+
+  const getSuggestedTags = () => {
+    const titleLower = (exportForm.title || '').toLowerCase()
+    const bodyLower = (exportForm.body || '').toLowerCase()
+    const combined = `${titleLower} ${bodyLower}`
+
+    const suggestions = new Set()
+
+    // 1. Rule-based category mappings
+    if (combined.includes('noc') || combined.includes('onboard') || combined.includes('document')) {
+      suggestions.add('NOC & Onboarding')
+    }
+    if (combined.includes('vibe') || combined.includes('journal') || combined.includes('rosetta') || combined.includes('daily')) {
+      suggestions.add('ViBe Platform & Learning')
+    }
+    if (combined.includes('date') || combined.includes('start') || combined.includes('timeline') || combined.includes('leave') || combined.includes('time') || combined.includes('deadline')) {
+      suggestions.add('Timing & Dates')
+    }
+    if (combined.includes('certificate') || combined.includes('select') || combined.includes('offer') || combined.includes('interview')) {
+      suggestions.add('Selection, Offer & Certificate')
+    }
+    if (combined.includes('points') || combined.includes('spark') || combined.includes('score') || combined.includes('leaderboard')) {
+      suggestions.add('sparks')
+    }
+
+    // 2. Dynamic DB tag mappings
+    if (Array.isArray(availableTags)) {
+      availableTags.forEach((tag) => {
+        const tagName = (tag.name || '').toLowerCase()
+        if (tagName && tagName.length > 2) {
+          const regex = new RegExp(`\\b${tagName}\\b`, 'i')
+          if (regex.test(combined)) {
+            suggestions.add(tag.displayName || tag.name)
+          }
+        }
+      })
+    }
+
+    return Array.from(suggestions)
+  }
+
+  const handleToggleSuggestion = (tag) => {
+    const currentTags = exportForm.tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+
+    const index = currentTags.findIndex((t) => t.toLowerCase() === tag.toLowerCase())
+    if (index > -1) {
+      currentTags.splice(index, 1)
+    } else {
+      currentTags.push(tag)
+    }
+
+    setExportForm((f) => ({ ...f, tags: currentTags.join(', ') }))
+  }
+
   const { user } = useAuthStore()
   const userRoles = user?.roles ?? (user?.role ? [user.role] : [])
   const isAdmin = userRoles.includes('ADMIN')
@@ -163,11 +292,46 @@ function AdminQueryDetailView({ queryId, onBack }) {
     }
   }
 
+  const acceptedAnswer = data?.answers?.find(a => a.is_accepted) || data?.answers?.find(a => a.is_expert || a.is_official) || data?.answers?.[0]
+  const canExport = isAdmin && data?.question && data.question.status === 'closed' && acceptedAnswer && !data.question.linked_faq_id
+
+  const handleOpenExport = () => {
+    if (!data?.question) return
+    setExportForm({
+      title: data.question.title || '',
+      body: acceptedAnswer ? acceptedAnswer.body : '',
+      tags: data.question.tags ? data.question.tags.join(', ') : '',
+    })
+    setAnswerTab('write')
+    setShowExportModal(true)
+  }
+
+  async function handleExportSubmit(e) {
+    e.preventDefault()
+    if (!exportForm.title.trim() || !exportForm.body.trim() || exporting) return
+    setExporting(true)
+    try {
+      const payload = {
+        curatedTitle: exportForm.title.trim(),
+        curatedBody: exportForm.body.trim(),
+        tags: exportForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+      }
+      await exportToFAQ(queryId, payload)
+      notifySuccess('Query successfully exported to FAQ.')
+      setShowExportModal(false)
+      await load()
+    } catch (err) {
+      notifyError(err?.response?.data?.message || 'Could not export to FAQ.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const BackButton = (
     <button
       type="button"
       onClick={onBack}
-      className="mb-5 flex items-center gap-1.5 text-[13px] font-semibold text-text-muted transition hover:text-text-primary"
+      className="flex items-center gap-1.5 text-[13px] font-semibold text-text-muted transition hover:text-text-primary"
     >
       <ArrowLeft className="h-4 w-4" strokeWidth={1.8} /> Back to queries
     </button>
@@ -208,7 +372,25 @@ function AdminQueryDetailView({ queryId, onBack }) {
 
   return (
     <div className="flex-1 overflow-y-auto p-5 lg:p-8">
-      {BackButton}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        {BackButton}
+        <div className="flex items-center gap-2">
+          {canExport && (
+            <button
+              type="button"
+              onClick={handleOpenExport}
+              className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-brand/90"
+            >
+              Export to FAQ
+            </button>
+          )}
+          {q.linked_faq_id && (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5 text-[11px] font-semibold text-purple-700">
+              Exported to FAQ
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Question */}
       <article className="rounded-xl border border-border-light bg-bg-card p-6 shadow-sm">
@@ -233,8 +415,8 @@ function AdminQueryDetailView({ queryId, onBack }) {
         <h1 className="font-display text-[22px] font-bold text-text-primary">{q.title}</h1>
 
         <div
-          className="mt-3 text-[14px] leading-7 text-text-secondary [&_a]:text-brand [&_a]:underline"
-          dangerouslySetInnerHTML={{ __html: q.body || '' }}
+          className="markdown-body mt-3 text-[14px] leading-7 text-text-secondary [&_a]:text-brand [&_a]:underline"
+          dangerouslySetInnerHTML={{ __html: parseMarkdown(q.body) || '' }}
         />
 
         {(q.tags || []).length > 0 && (
@@ -244,6 +426,46 @@ function AdminQueryDetailView({ queryId, onBack }) {
                 <Tag className="h-2.5 w-2.5" strokeWidth={2} /> {t}
               </span>
             ))}
+          </div>
+        )}
+
+        {q.attachments && q.attachments.length > 0 && (
+          <div className="mt-4 rounded-xl border border-border-light bg-bg-primary p-4">
+            <h4 className="mb-3 text-[13px] font-semibold text-text-primary">Attachments</h4>
+            <ul className="space-y-2">
+              {q.attachments.map((attachment) => {
+                const downloadUrl = attachment.download_url?.startsWith('/api') && API_BASE_URL
+                  ? `${API_BASE_URL}${attachment.download_url}`
+                  : attachment.download_url
+
+                const previewUrl = `${downloadUrl}?preview=true`
+
+                return (
+                  <li key={attachment.attachment_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border-light bg-bg-card px-4 py-3">
+                    <span className="text-[13px] font-medium text-text-primary truncate max-w-[280px] sm:max-w-[400px]" title={attachment.file_name}>
+                      {attachment.file_name}
+                    </span>
+                    <div className="flex gap-2">
+                      <a
+                        href={previewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-lg bg-brand/10 px-3 py-1.5 text-[11px] font-bold text-brand transition-colors hover:bg-brand/20"
+                      >
+                        Preview
+                      </a>
+                      <a
+                        href={downloadUrl}
+                        download={attachment.file_name}
+                        className="inline-flex items-center justify-center rounded-lg border border-border-light px-3 py-1.5 text-[11px] font-bold text-text-secondary transition-colors hover:bg-bg-tertiary"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         )}
 
@@ -278,22 +500,58 @@ function AdminQueryDetailView({ queryId, onBack }) {
       )}
 
       {/* Admin response composer — posts as ADMIN and resolves immediately */}
+      {/* Admin response composer — posts as ADMIN and resolves immediately */}
       <div className="mt-6 rounded-xl border border-border-light bg-bg-card p-5 shadow-sm">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="flex items-center gap-1 rounded bg-purple-50 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700">
-            <ShieldCheck className="h-3 w-3" strokeWidth={2.4} /> Respond as ADMIN
-          </span>
-          {q.status === 'closed' && (
-            <span className="text-[11px] text-text-muted">This question is already resolved — a new response re-resolves it.</span>
-          )}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 rounded bg-purple-50 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700">
+              <ShieldCheck className="h-3 w-3" strokeWidth={2.4} /> Respond as ADMIN
+            </span>
+            {q.status === 'closed' && (
+              <span className="text-[11px] text-text-muted">This question is already resolved — a new response re-resolves it.</span>
+            )}
+          </div>
+          <div className="flex border border-border-light rounded-lg overflow-hidden p-0.5 bg-bg-primary">
+            <button
+              type="button"
+              onClick={() => setCommentTab('write')}
+              className={`px-3 py-1 text-[11px] font-bold rounded transition ${
+                commentTab === 'write'
+                  ? 'bg-bg-card text-brand shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              Write
+            </button>
+            <button
+              type="button"
+              onClick={() => setCommentTab('preview')}
+              className={`px-3 py-1 text-[11px] font-bold rounded transition ${
+                commentTab === 'preview'
+                  ? 'bg-bg-card text-brand shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              Preview
+            </button>
+          </div>
         </div>
-        <textarea
-          value={comment}
-          onChange={e => setComment(e.target.value)}
-          rows={3}
-          placeholder="Write an authoritative response… Posting it resolves the question."
-          className="w-full resize-none rounded-lg border border-border bg-bg-primary px-4 py-3 text-[13px] text-text-primary placeholder:text-text-muted outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary"
-        />
+
+        {commentTab === 'write' ? (
+          <textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            rows={3}
+            placeholder="Write an authoritative response… Posting it resolves the question. Markdown is supported."
+            className="w-full resize-none rounded-lg border border-border bg-bg-primary px-4 py-3 text-[13px] text-text-primary placeholder:text-text-muted outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary"
+          />
+        ) : (
+          <div
+            className="markdown-body min-h-[82px] w-full rounded-lg border border-border bg-bg-primary px-4 py-3 text-[13px] text-text-secondary overflow-y-auto"
+            dangerouslySetInnerHTML={{ __html: parseMarkdown(comment) || '<em class="text-text-muted">Nothing to preview</em>' }}
+          />
+        )}
+
         <div className="mt-3 flex items-center justify-between">
           <p className="text-[11px] text-text-muted">Shown as <strong className="text-text-secondary">ADMIN</strong>, not your name.</p>
           <button
@@ -326,6 +584,137 @@ function AdminQueryDetailView({ queryId, onBack }) {
           </div>
         )}
       </div>
+
+      {/* Export to FAQ Curation Modal */}
+      <Modal isOpen={showExportModal} onClose={() => setShowExportModal(false)} title="Export to FAQ" panelClassName="!max-w-xl !rounded-xl !p-0 overflow-hidden">
+        <form onSubmit={handleExportSubmit}>
+          <div className="border-b border-border-light px-8 pb-6 pt-8">
+            <h2 className="font-display text-[26px] font-bold leading-tight text-text-primary">Export to FAQ</h2>
+            <p className="mt-1 text-[13px] text-text-secondary">Curate and refine this community query to be published in the official FAQ database.</p>
+          </div>
+
+          <div className="space-y-5 px-8 py-7">
+            <div className="group">
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">CURATED QUESTION</label>
+              <input
+                className="w-full rounded-lg border border-border bg-bg-primary px-4 py-2.5 text-[13px] text-text-primary placeholder:text-text-muted outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary"
+                value={exportForm.title}
+                onChange={(e) => setExportForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="e.g., How do I submit my weekly report?"
+                required
+              />
+            </div>
+            <div className="group">
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">
+                  CURATED ANSWER
+                </label>
+                <div className="flex border border-border-light rounded-lg overflow-hidden p-0.5 bg-bg-primary">
+                  <button
+                    type="button"
+                    onClick={() => setAnswerTab('write')}
+                    className={`px-3 py-0.5 text-[10px] font-bold rounded transition ${
+                      answerTab === 'write'
+                        ? 'bg-bg-card text-brand shadow-sm'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    Write
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAnswerTab('preview')}
+                    className={`px-3 py-0.5 text-[10px] font-bold rounded transition ${
+                      answerTab === 'preview'
+                        ? 'bg-bg-card text-brand shadow-sm'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
+
+              {answerTab === 'write' ? (
+                <textarea
+                  className="w-full rounded-lg border border-border bg-bg-primary px-4 py-2.5 text-[13px] text-text-primary placeholder:text-text-muted outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary resize-none"
+                  rows={6}
+                  value={exportForm.body}
+                  onChange={(e) => setExportForm((f) => ({ ...f, body: e.target.value }))}
+                  placeholder="Detail the step-by-step process or policy here…"
+                  required
+                />
+              ) : (
+                <div
+                  className="markdown-body min-h-[146px] w-full rounded-lg border border-border bg-bg-primary px-4 py-3 text-[13px] text-text-secondary overflow-y-auto"
+                  dangerouslySetInnerHTML={{ __html: parseMarkdown(exportForm.body) || '<em class="text-text-muted">Nothing to preview</em>' }}
+                />
+              )}
+            </div>
+            <div className="group">
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted transition-colors group-focus-within:text-text-primary animate-colors">
+                TAGS <span className="ml-0.5 text-[10px] font-medium normal-case tracking-normal text-text-muted">(comma-separated)</span>
+              </label>
+              <div className="relative flex items-center">
+                <Tag className="pointer-events-none absolute left-3 h-4 w-4 text-text-muted" strokeWidth={1.8} />
+                <input
+                  className="w-full rounded-lg border border-border bg-bg-primary px-4 py-2.5 text-[13px] text-text-primary placeholder:text-text-muted outline-none transition focus:border-text-primary focus:ring-1 focus:ring-text-primary pl-10"
+                  value={exportForm.tags}
+                  onChange={(e) => setExportForm((f) => ({ ...f, tags: e.target.value }))}
+                  placeholder="internship, onboarding, reports"
+                />
+              </div>
+
+              {/* Tag suggestions */}
+              {getSuggestedTags().length > 0 && (
+                <div className="mt-3">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1.5">Suggested Tags (Click to toggle):</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {getSuggestedTags().map((tag) => {
+                      const isSelected = exportForm.tags
+                        .split(',')
+                        .map((t) => t.trim().toLowerCase())
+                        .includes(tag.toLowerCase())
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => handleToggleSuggestion(tag)}
+                          className={`rounded px-2 py-0.5 text-[10px] font-semibold transition duration-150 ${
+                            isSelected
+                              ? 'bg-brand/20 text-brand border border-brand/30'
+                              : 'bg-bg-tertiary text-text-muted border border-border hover:bg-hover-bg hover:text-text-primary'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 px-8 pb-8">
+            <button
+              type="button"
+              onClick={() => setShowExportModal(false)}
+              disabled={exporting}
+              className="rounded-lg px-6 py-2.5 text-[14px] font-medium text-text-secondary transition hover:bg-hover-bg disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={exporting}
+              className="rounded-lg bg-black px-8 py-2.5 text-[14px] font-semibold text-white shadow-lg shadow-black/10 transition hover:bg-[#2e3132] disabled:opacity-50"
+            >
+              {exporting ? 'Exporting…' : 'Publish as FAQ'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

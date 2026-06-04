@@ -1,5 +1,7 @@
 import { axisPrivate } from '../../api/axios'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 export function timeAgo(dateStr) {
@@ -73,9 +75,33 @@ export async function fetchQuestions({
   return data
 }
 
+export async function fetchQuestionCounts({
+  search = '',
+  tag = '',
+  my = false,
+} = {}) {
+  const params = new URLSearchParams({ kind: 'community' })
+  if (search) params.set('search', search)
+  if (tag) params.set('tag', tag)
+  if (my) params.set('my', '1')
+
+  const { data } = await axisPrivate().get(`/api/questions/counts?${params}`)
+  return data
+}
+
+
 export async function voteQuestion(questionId) {
   const { data } = await axisPrivate().post(`/api/questions/${questionId}/vote`)
   return data
+}
+
+export function createDashboardEventSource({ my = false } = {}) {
+  const params = new URLSearchParams()
+  if (my) params.set('my', '1')
+
+  return new EventSource(`${API_BASE_URL}/api/dashboard/events?${params}`, {
+    withCredentials: true,
+  })
 }
 
 export async function fetchQuestionTags() {
@@ -83,8 +109,26 @@ export async function fetchQuestionTags() {
   return data.tags || []
 }
 
-export async function createQuestion({ title, body, tags = [], isAnonymous = false }) {
-  const { data } = await axisPrivate().post('/api/questions', { title, body, tags, is_anonymous: isAnonymous })
+export async function createQuestion({ title, body, tags = [], isAnonymous = false, attachments = [] }) {
+  const client = axisPrivate()
+
+  if (attachments.length > 0) {
+    const formData = new FormData()
+    formData.append('title', title)
+    formData.append('body', body)
+    formData.append('isAnonymous', isAnonymous ? 'true' : 'false')
+    tags.forEach((tag) => formData.append('tags', tag))
+    attachments.forEach((file) => formData.append('attachments', file))
+
+    const { data } = await client.post('/api/questions', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return data
+  }
+
+  const { data } = await client.post('/api/questions', { title, body, tags, isAnonymous })
   return data // { success, questionId }
 }
 
@@ -93,6 +137,11 @@ export async function createQuestion({ title, body, tags = [], isAnonymous = fal
 export async function fetchQuestionDetail(questionId) {
   const { data } = await axisPrivate().get(`/api/questions/${questionId}`)
   return data // { question, answers, comments }
+}
+
+export async function recordQuestionView(questionId) {
+  // Fire-and-forget — view tracking must never block or break the page load.
+  axisPrivate().post(`/api/questions/${questionId}/view`).catch(() => {})
 }
 
 export async function postAnswer(questionId, body) {
@@ -122,6 +171,26 @@ export async function postComment(answerId, body, parentId = null) {
     body,
     parentId,
   })
+  return data
+}
+
+export async function updateComment(commentId, body) {
+  const { data } = await axisPrivate().patch(`/api/comments/${commentId}`, { body })
+  return data
+}
+
+export async function deleteComment(commentId) {
+  const { data } = await axisPrivate().delete(`/api/comments/${commentId}`)
+  return data
+}
+
+export async function updateAnswer(answerId, body) {
+  const { data } = await axisPrivate().patch(`/api/answers/${answerId}`, { body })
+  return data
+}
+
+export async function deleteAnswer(answerId) {
+  const { data } = await axisPrivate().delete(`/api/answers/${answerId}`)
   return data
 }
 

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   MessageSquare, ChevronUp, Zap, Tag, Pin, Lock, CheckCircle,
-  Clock, User, ChevronLeft, ChevronRight, Loader, VenetianMask,
+  Clock, User, ChevronLeft, ChevronRight, Loader, VenetianMask, Filter
 } from 'lucide-react'
 import { fetchAdminQuestions } from '../../service'
 
@@ -39,24 +40,39 @@ function formatDate(value) {
 }
 
 function QueriesManagementView({ searchQuery = '', onOpenQuery }) {
+  const location = useLocation()
+
   const [items, setItems]         = useState([])
   const [pagination, setPagination] = useState({ page: 1, pages: 0, total: 0 })
   const [loading, setLoading]     = useState(true)
   const [page, setPage]           = useState(1)
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
 
-  // Debounce header search; reset to page 1 whenever the term changes.
+  const [filterStatus, setFilterStatus] = useState(location.state?.status || '')
+  const [filterKind, setFilterKind] = useState(location.state?.kind || '')
+  const [filterId, setFilterId] = useState(location.state?.id || '')
+  const [filterExpert, setFilterExpert] = useState(location.state?.expert || '')
+
+  const [debouncedFilterId, setDebouncedFilterId] = useState(filterId)
+
+  // Debounce header search and filterId; reset to page 1 whenever the term changes.
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setDebouncedFilterId(filterId)
+    }, 300)
     return () => clearTimeout(t)
-  }, [searchQuery])
-  useEffect(() => { setPage(1) }, [debouncedSearch])
+  }, [searchQuery, filterId])
+  
+  useEffect(() => { setPage(1) }, [debouncedSearch, filterStatus, filterKind, debouncedFilterId, filterExpert])
+
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const { questions, pagination: meta } = await fetchAdminQuestions({
         page, limit: PAGE_SIZE, search: debouncedSearch,
+        status: filterStatus, kind: filterKind, id: debouncedFilterId, hasExpertAnswer: filterExpert
       })
       setItems(questions)
       setPagination(meta)
@@ -66,7 +82,7 @@ function QueriesManagementView({ searchQuery = '', onOpenQuery }) {
     } finally {
       setLoading(false)
     }
-  }, [page, debouncedSearch])
+  }, [page, debouncedSearch, filterStatus, filterKind, debouncedFilterId, filterExpert])
 
   useEffect(() => { load() }, [load])
 
@@ -74,7 +90,7 @@ function QueriesManagementView({ searchQuery = '', onOpenQuery }) {
 
   return (
     <div className="flex-1 overflow-y-auto p-5 lg:p-8">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-[24px] font-semibold text-text-primary">
             Queries Management
@@ -83,9 +99,55 @@ function QueriesManagementView({ searchQuery = '', onOpenQuery }) {
             Review all platform questions across every status and kind.
           </p>
         </div>
-        <span className="rounded-full bg-bg-tertiary px-3 py-1 text-[12px] font-semibold text-text-muted">
-          {pagination.total} total
-        </span>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border-light bg-bg-card p-1 shadow-sm">
+            <Filter className="ml-2 h-3.5 w-3.5 text-text-muted" strokeWidth={2} />
+            <input
+              type="text"
+              placeholder="Ticket ID..."
+              value={filterId}
+              onChange={(e) => setFilterId(e.target.value)}
+              className="h-7 w-24 bg-transparent px-2 text-[12px] font-medium text-text-primary outline-none placeholder:font-normal"
+            />
+            <div className="h-4 w-px bg-border-light" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-7 cursor-pointer bg-transparent px-2 text-[12px] font-medium text-text-primary outline-none"
+            >
+              <option value="">All Statuses</option>
+              <option value="unanswered">Unanswered</option>
+              <option value="answered">Answered</option>
+              <option value="closed">Resolved (Closed)</option>
+              <option value="removed">Removed</option>
+            </select>
+            <div className="h-4 w-px bg-border-light" />
+            <select
+              value={filterKind}
+              onChange={(e) => setFilterKind(e.target.value)}
+              className="h-7 cursor-pointer bg-transparent px-2 text-[12px] font-medium text-text-primary outline-none"
+            >
+              <option value="">All Kinds</option>
+              <option value="community">Community</option>
+              <option value="faq">FAQ</option>
+            </select>
+            <div className="h-4 w-px bg-border-light" />
+            <select
+              value={filterExpert}
+              onChange={(e) => setFilterExpert(e.target.value)}
+              className="h-7 cursor-pointer bg-transparent px-2 text-[12px] font-medium text-text-primary outline-none pr-1"
+            >
+              <option value="">Any Expert</option>
+              <option value="true">Expert Answered</option>
+              <option value="false">No Expert</option>
+            </select>
+          </div>
+          
+          <span className="rounded-full bg-bg-tertiary px-3 py-1.5 text-[12px] font-semibold text-text-muted">
+            {pagination.total} total
+          </span>
+        </div>
       </div>
 
       {loading ? (

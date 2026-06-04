@@ -5,6 +5,7 @@ import {
   createTag,
   createUser,
   deleteTag,
+  exportQuestionToFAQ,
   getAdminDashboard,
   getAdminSettings,
   listAdminSparkTransactions,
@@ -46,5 +47,8 @@ router.delete('/tags/:tagName', deleteTag)
 
 // Admin posts a response and resolves the question in one action.
 router.post('/questions/:questionId/resolve', adminCommentAndResolve)
+
+// Admin exports a resolved question to the FAQ database after curation
+router.post('/questions/:questionId/export-faq', exportQuestionToFAQ)
 
 export default router

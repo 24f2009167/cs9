@@ -64,6 +64,19 @@ const questionSchema = new mongoose.Schema(
 
     tags: [String],
 
+    attachments: [
+      {
+        attachment_id: {
+          type: String,
+          default: randomUUID,
+          immutable: true,
+        },
+        file_name: String,
+        mime_type: String,
+        data: Buffer,
+      },
+    ],
+
     spark_bounty: {
       type: Number,
       default: 0,
@@ -194,11 +207,12 @@ questionSchema.index(
 )
 
 // Normalize body whitespace before saving.
-questionSchema.pre('save', function (next) {
+questionSchema.pre('save', function () {
   if (this.isModified('body')) {
-    this.body = this.body.replace(/\s+/g, ' ').trim()
+    this.body = this.body.replace(/[ \t]+/g, ' ').trim()
   }
-  next()
 })
 
+export { questionSchema }
 export default mongoose.model('Question', questionSchema)
+

@@ -13,6 +13,8 @@ import SparkLeaderboardView from './pages/SparkLeaderboard'
 import UserManagementView from './pages/UserManagement'
 import AdminProfileView from './pages/AdminProfile'
 import AdminSettingsView from './pages/Settings'
+import AdminOnboardingTour from './components/OnboardingTour/AdminOnboardingTour'
+import Footer from '../../components/Footer/Footer'
 import {
   ADMIN_ROUTE_PATHS,
   adminPathForQuery,
@@ -51,6 +53,8 @@ function AdminHome() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [notifSidebarOpen, setNotifSidebarOpen] = useState(false)
+  const [isLeftPaneCollapsed, setIsLeftPaneCollapsed] = useState(false)
+  const [isTourActive, setIsTourActive] = useState(false)
 
   const initials = user?.name
     ? user.name
@@ -79,6 +83,19 @@ function AdminHome() {
       navigate(ADMIN_ROUTE_PATHS.dashboard, { replace: true })
     }
   }, [location.pathname, navigate, resolvedAdminView])
+
+  useEffect(() => {
+    if (!user?.userId) return
+    // Allow tour to trigger on both /admin and /admin/dashboard
+    if (location.pathname !== '/admin/dashboard' && location.pathname !== '/admin' && location.pathname !== '/admin/') return
+    const isCompleted = localStorage.getItem(`rogare-admin-tour-completed-${user.userId}`) === 'true'
+    if (!isCompleted) {
+      const timer = setTimeout(() => {
+        setIsTourActive(true)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [user?.userId, location.pathname])
 
   useEffect(() => {
     let isActive = true
@@ -134,13 +151,13 @@ function AdminHome() {
     navigate('/')
   }
 
-  const navigateAdmin = useCallback((target) => {
+  const navigateAdmin = useCallback((target, options) => {
     const path = normalizeAdminNavigationTarget(target)
     if (path.startsWith('http')) {
       window.open(path, '_blank', 'noopener,noreferrer')
       return
     }
-    navigate(path)
+    navigate(path, options)
   }, [navigate])
 
   async function handleMarkAllNotifRead() {
@@ -186,13 +203,18 @@ function AdminHome() {
 
   return (
     <div
-      className={`flex min-h-svh bg-bg-primary text-text-primary ${
+      className={`flex h-svh overflow-hidden bg-bg-primary text-text-primary ${
         isDark ? 'dark' : ''
       }`}
     >
-      <AdminLeftPane currentView={currentAdminView} onNavigate={navigateAdmin} />
+      <AdminLeftPane
+        currentView={currentAdminView}
+        onNavigate={navigateAdmin}
+        isCollapsed={isLeftPaneCollapsed}
+        onToggleCollapse={() => setIsLeftPaneCollapsed((v) => !v)}
+      />
 
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <AdminHeader
           user={user}
           initials={initials}
@@ -208,25 +230,33 @@ function AdminHome() {
           onLanding={() => navigate('/')}
           onLogout={handleLogout}
           onProfileSettings={handleProfileSettings}
+          onStartTour={() => setIsTourActive(true)}
         />
 
-        {currentAdminView === 'dashboard' && (
-          <Suspense
-            fallback={<div className="flex-1 p-8 text-[13px] text-text-muted">Loading dashboard…</div>}
-          >
-            <DashboardView {...viewProps} />
-          </Suspense>
-        )}
-        {currentAdminView === 'queriesManagement' && <QueriesManagementView {...viewProps} onOpenQuery={openQuery} />}
-        {currentAdminView === 'queryDetail' && (
-          <AdminQueryDetailView queryId={selectedQueryId} onBack={() => navigateAdmin('queriesManagement')} />
-        )}
-        {currentAdminView === 'flagModeration' && <FlagModerationView {...viewProps} />}
-        {currentAdminView === 'userManagement' && <UserManagementView {...viewProps} />}
-        {currentAdminView === 'sparkLeaderboard' && <SparkLeaderboardView {...viewProps} />}
-        {currentAdminView === 'faqManagement' && <FAQManagementView {...viewProps} />}
-        {currentAdminView === 'settings' && <AdminSettingsView {...viewProps} />}
-        {currentAdminView === 'adminProfile' && <AdminProfileView user={user} />}
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1">
+            {currentAdminView === 'dashboard' && (
+              <Suspense
+                fallback={<div className="flex-1 p-8 text-[13px] text-text-muted">Loading dashboard…</div>}
+              >
+                <DashboardView {...viewProps} />
+              </Suspense>
+            )}
+            {currentAdminView === 'queriesManagement' && <QueriesManagementView {...viewProps} onOpenQuery={openQuery} />}
+            {currentAdminView === 'queryDetail' && (
+              <AdminQueryDetailView queryId={selectedQueryId} onBack={() => navigateAdmin('queriesManagement')} />
+            )}
+            {currentAdminView === 'flagModeration' && <FlagModerationView {...viewProps} />}
+            {currentAdminView === 'userManagement' && <UserManagementView {...viewProps} />}
+            {currentAdminView === 'sparkLeaderboard' && <SparkLeaderboardView {...viewProps} />}
+            {currentAdminView === 'faqManagement' && <FAQManagementView {...viewProps} />}
+            {currentAdminView === 'settings' && <AdminSettingsView {...viewProps} />}
+            {currentAdminView === 'adminProfile' && <AdminProfileView user={user} />}
+          </div>
+          <div className="mt-auto">
+            <Footer />
+          </div>
+        </div>
       </main>
 
       <AdminNotificationSidebar
@@ -238,6 +268,12 @@ function AdminHome() {
           handleNotifSidebarClose()
           navigateAdmin(view)
         }}
+      />
+
+      <AdminOnboardingTour
+        userId={user?.userId}
+        isActive={isTourActive}
+        onClose={() => setIsTourActive(false)}
       />
     </div>
   )

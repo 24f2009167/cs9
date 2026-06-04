@@ -1,19 +1,37 @@
 import { Router } from 'express'
+import multer from 'multer'
 import { createAnswer } from '../controllers/answer.controller.js'
 import {
   acceptAnswer,
   createQuestion,
   deleteQuestion,
+  downloadQuestionAttachment,
   getQuestionById,
+  getQuestionCounts,
   listPublishedFAQs,
   listQuestions,
   listQuestionTags,
+  recordQuestionView,
   resolveQuestion,
   updateQuestion,
   voteQuestion,
 } from '../controllers/question.controller.js'
 import { checkRole, verifyToken } from '../middleware/authMiddleware.js'
 import { questionCreationLimiter } from '../middleware/rateLimit.middleware.js'
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg']
+    if (!allowed.includes(file.mimetype)) {
+      const error = new Error('Only PDF, JPG and PNG attachments are allowed')
+      error.statusCode = 400
+      return cb(error)
+    }
+    cb(null, true)
+  },
+})
 
 const router = Router()
 
@@ -76,7 +94,7 @@ router.use(verifyToken)
  *       403:
  *         description: Forbidden
  */
-router.post('/', questionCreationLimiter, checkRole('USER', 'RESOLVER', 'ADMIN'), createQuestion)
+router.post('/', questionCreationLimiter, checkRole('USER', 'RESOLVER', 'ADMIN'), upload.array('attachments', 5), createQuestion)
 
 /**
  * @openapi
@@ -145,6 +163,8 @@ router.get('/', checkRole('USER', 'RESOLVER', 'ADMIN'), listQuestions)
  */
 router.get('/tags', checkRole('USER', 'RESOLVER', 'ADMIN'), listQuestionTags)
 
+router.get('/counts', checkRole('USER', 'RESOLVER', 'ADMIN'), getQuestionCounts)
+
 /**
  * @openapi
  * /api/questions/{questionId}:
@@ -177,6 +197,29 @@ router.get('/tags', checkRole('USER', 'RESOLVER', 'ADMIN'), listQuestionTags)
  *         description: Question not found
  */
 router.get('/:questionId', checkRole('USER', 'RESOLVER', 'ADMIN'), getQuestionById)
+router.get('/:questionId/attachments/:attachmentId', checkRole('USER', 'RESOLVER', 'ADMIN'), downloadQuestionAttachment)
+
+/**
+ * @openapi
+ * /api/questions/{questionId}/view:
+ *   post:
+ *     summary: Record a question view (once per user, author excluded)
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: View recorded or already exists
+ *       404:
+ *         description: Question not found
+ */
+router.post('/:questionId/view', checkRole('USER', 'RESOLVER', 'ADMIN'), recordQuestionView)
 
 /**
  * @openapi
