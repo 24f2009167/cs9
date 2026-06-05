@@ -82,8 +82,7 @@ async function hourlyTrafficAggregation(since24h) {
   return allHours.map(hour => ({
     hour,                          // e.g. "2026-05-31 22:00"
     questions: qMap[hour] ?? 0,
-    answers: (aMap[hour] ?? 0) + (cMap[hour] ?? 0),
-    comments: cMap[hour] ?? 0,
+    answers: (aMap[hour] ?? 0) + (cMap[hour] ?? 0),  // answers + comments combined
   }))
 }
 
@@ -194,6 +193,17 @@ export async function getAdminDashboard(req, res, next) {
     const sparkTotal = totalSparks[0]?.total ?? 0
     const kindMap = Object.fromEntries(questionsByKind.map((k) => [k._id, k.count]))
 
+    // Community Independence: resolvers are part of the community, so their
+    // answers are folded into the USER bucket — only ADMIN stays separate.
+    const supportRoleTotals = { ADMIN: 0, USER: 0 }
+    for (const a of answersByRoleRaw) {
+      const role = (a._id || 'USER').toUpperCase()
+      supportRoleTotals[role === 'ADMIN' ? 'ADMIN' : 'USER'] += a.count
+    }
+    const supportLoad = Object.entries(supportRoleTotals)
+      .filter(([, value]) => value > 0)
+      .map(([name, value]) => ({ name, value }))
+
     res.json({
       success: true,
       metrics: {
@@ -226,10 +236,7 @@ export async function getAdminDashboard(req, res, next) {
           else label = '> 24h'
           return { name: label, count: b.count }
         }),
-        supportLoad: answersByRoleRaw.map(a => ({
-          name: (a._id || 'USER').toUpperCase(),
-          value: a.count,
-        })),
+        supportLoad,
         categories: tagStats.map(t => ({
           category: t.tag.charAt(0).toUpperCase() + t.tag.slice(1),
           total: t.total,
